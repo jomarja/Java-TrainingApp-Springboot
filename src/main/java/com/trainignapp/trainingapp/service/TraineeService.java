@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-
 import java.security.SecureRandom;
 import java.util.Random;
 
@@ -15,7 +14,6 @@ import java.util.Random;
 public class TraineeService {
     private static final Logger logger = LoggerFactory.getLogger(TraineeService.class);
     private TraineeDao traineeDao;
-
 
     @Autowired
     public TraineeService(TraineeDao traineeDao) {
@@ -27,22 +25,63 @@ public class TraineeService {
         String username = generateUniqueUsername(trainee.getFirstName(), trainee.getLastName());
         String password = generateRandomPassword();
 
-        trainee.setUserName(username);
+        trainee.setUsername(username);
         trainee.setPassword(password);
 
-        traineeDao.create(trainee);
+        traineeDao.save(trainee);
+        logger.info("trainee created", trainee.getUsername());
     }
 
-    public void updateTrainee(Trainee trainee) {
-        traineeDao.update(trainee);
+
+    public boolean authenticateTrainee(String username, String password) {
+        if (traineeDao.findByUsername(username).isPresent()) {
+            return traineeDao.findByUsername(username).get().getPassword().equals(password);
+        } else return false;
     }
 
-    public void deleteTrainee(int userId) {
-        traineeDao.delete(userId);
+    public Trainee select(String username) {
+        return traineeDao.findByUsername(username).orElse(null);
     }
 
-    public Trainee getTrainee(int userId) {
-        return traineeDao.select(userId);
+    public void updateTraineePassword(String username, String newPassword) {
+        Trainee trainer = select(username);
+        if (authenticateTrainee(username, trainer.getPassword())) {
+            trainer.setPassword(newPassword);
+            traineeDao.save(trainer);
+        } else new RuntimeException("Authentificate First Please");
+    }
+
+    public void updateProfile(String username, Trainee newtrainee) {
+        Trainee oldTrainer = select(username);
+        if (authenticateTrainee(username, newtrainee.getPassword())) {
+            oldTrainer.setUsername(newtrainee.getUsername());
+            oldTrainer.setFirstName(newtrainee.getFirstName());
+            oldTrainer.setLastName(newtrainee.getLastName());
+            oldTrainer.setPassword(newtrainee.getPassword());
+            oldTrainer.setIsActive(newtrainee.getIsActive());
+            traineeDao.save(oldTrainer);
+            logger.info("trainee profile updated", newtrainee);
+        } else new RuntimeException("Authentificate First Please");
+    }
+
+    public void deactivateTrainee(String username) {
+        Trainee trainer = select(username);
+        if (!authenticateTrainee(username, trainer.getPassword())) {
+            new RuntimeException("Authentificate First Please");
+        } else {
+            trainer.setIsActive(!trainer.getIsActive());
+            traineeDao.save(trainer);
+            logger.info("trainee active status changed to: ", trainer.getIsActive());
+        }
+    }
+
+    public void deleteTrainee(String username) {
+        Trainee trainee = select(username);
+        if (authenticateTrainee(username, trainee.getPassword())) {
+            traineeDao.delete(trainee);
+            logger.info("trainee deleted", trainee.getFirstName());
+        } else new RuntimeException("Authentificate First Please");
+
     }
 
     private String generateUniqueUsername(String firstName, String lastName) {
@@ -61,8 +100,8 @@ public class TraineeService {
     }
 
     private boolean isUsernameTaken(String username) {
-        for (Trainee trainee : traineeDao.getAllTrainees()) {
-            if (trainee.getUserName().equals(username)) {
+        for (Trainee trainee : traineeDao.findAll()) {
+            if (trainee.getUsername().equals(username)) {
                 logger.info("uname taken:", true);
                 return true;
             }
@@ -71,7 +110,7 @@ public class TraineeService {
         return false;
     }
 
-    private String generateRandomPassword() {
+    public String generateRandomPassword() {
         String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         int length = 10;
         SecureRandom random = new SecureRandom();

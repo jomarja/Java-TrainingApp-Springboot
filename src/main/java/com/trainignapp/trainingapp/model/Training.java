@@ -1,84 +1,36 @@
 package com.trainignapp.trainingapp.model;
 
+import jakarta.persistence.*;
+import lombok.Data;
 
-import java.time.LocalDate;
+import java.util.Date;
 
-
+@Entity
+@Data
 public class Training {
-    private int trainee_id;
-    private int trainer_id;
-    private String name;
-    private String type;
-    private LocalDate training_date;
-    private int dutration;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
 
-    public Training(int trainee_id, int trainer_id, String name, int dutration) {
-        this.trainee_id = trainee_id;
-        this.trainer_id = trainer_id;
-        this.name = name;
-        this.dutration = dutration;
-    }
+    @ManyToOne
+    @JoinColumn(name = "trainee_id", nullable = false)
+    private Trainee trainee;
 
-    public Training(int trainee_id, int trainer_id, String name, String type, LocalDate training_date, int dutration) {
-        this.trainee_id = trainee_id;
-        this.trainer_id = trainer_id;
-        this.name = name;
-        this.type = type;
-        this.dutration = dutration;
-    }
+    @ManyToOne
+    @JoinColumn(name = "trainer_id", nullable = false)
+    private Trainer trainer;
 
-    public Training() {
+    @ManyToOne
+    @JoinColumn(name = "training_type_id", nullable = false)
+    private TrainingType trainingType;
 
-    }
+    @Column(nullable = false)
+    private String trainingName;
 
-    public int getTrainee_id() {
-        return trainee_id;
-    }
+    @Column(nullable = false)
+    private Date trainingDate;
 
-    public void setTrainee_id(int trainee_id) {
-        this.trainee_id = trainee_id;
-    }
-
-    public int getTrainer_id() {
-        return trainer_id;
-    }
-
-    public void setTrainer_id(int trainer_id) {
-        this.trainer_id = trainer_id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String  getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public LocalDate getTraining_date() {
-        return training_date;
-    }
-
-    public void setTraining_date(LocalDate training_date) {
-        this.training_date = training_date;
-    }
-
-    public int getDutration() {
-        return dutration;
-    }
-
-    public void setDutration(int dutration) {
-        this.dutration = dutration;
-    }
-
-
+    @Column(nullable = false)
+    private Integer trainingDuration;
 }
