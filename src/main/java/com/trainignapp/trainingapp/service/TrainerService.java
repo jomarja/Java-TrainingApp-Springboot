@@ -28,20 +28,59 @@ public class TrainerService {
         String username = generateUniqueUsername(trainer.getFirstName(), trainer.getLastName());
         String password = generateRandomPassword();
 
-        trainer.setUserName(username);
+        trainer.setUsername(username);
         trainer.setPassword(password);
 
-        trainerDao.create(trainer);
+        trainerDao.save(trainer);
+        logger.info("trainee created", trainer.getUsername());
     }
 
-    public void updateTrainer(Trainer trainer) {
-        trainerDao.update(trainer);
+    public boolean authenticateTrainer(String username, String password) {
+        if (trainerDao.findByUsername(username).isPresent()) {
+            return trainerDao.findByUsername(username).get().getPassword().equals(password);
+        } else throw new RuntimeException("Wrong username");
+
     }
 
-
-    public Trainer getTrainer(int userId) {
-        return trainerDao.select(userId);
+    public Trainer select(String username) {
+        return trainerDao.findByUsername(username).orElse(null);
     }
+
+    public void updateTrainerPassword(String username, String newPassword) {
+        Trainer trainer = select(username);
+        if (authenticateTrainer(username, trainer.getPassword())) {
+            trainer.setPassword(newPassword);
+            trainerDao.save(trainer);
+        } else new RuntimeException("Authentificate First Please");
+
+    }
+
+    public void updateProfile(String username, Trainer newtrainer) {
+        Trainer oldTrainer = select(username);
+        if (authenticateTrainer(username, newtrainer.getPassword())) {
+            oldTrainer.setSpecialization(newtrainer.getSpecialization());
+            oldTrainer.setUsername(newtrainer.getUsername());
+            oldTrainer.setFirstName(newtrainer.getFirstName());
+            oldTrainer.setLastName(newtrainer.getLastName());
+            oldTrainer.setPassword(newtrainer.getPassword());
+            oldTrainer.setIsActive(newtrainer.getIsActive());
+            trainerDao.save(oldTrainer);
+            logger.info("trainer profile updated", newtrainer);
+        } else new RuntimeException("Authentificate First Please");
+    }
+
+    public void deactivateTrainer(String username) {
+        Trainer trainer = select(username);
+        if (!authenticateTrainer(username, trainer.getPassword())) {
+            new RuntimeException("Authentificate First Please");
+        } else {
+            trainer.setIsActive(!trainer.getIsActive());
+            trainerDao.save(trainer);
+            logger.info("trainer active status changed to: ", trainer.getIsActive());
+
+        }
+    }
+
 
     private String generateUniqueUsername(String firstName, String lastName) {
         String baseUsername = firstName + "." + lastName;
@@ -57,15 +96,15 @@ public class TrainerService {
     }
 
     private boolean isUsernameTaken(String username) {
-        for (Trainer trainee : trainerDao.getAllTrainers()) {
-            if (trainee.getUserName().equals(username)) {
+        for (Trainer trainee : trainerDao.findAll()) {
+            if (trainee.getUsername().equals(username)) {
                 return true;
             }
         }
         return false;
     }
 
-    private String generateRandomPassword() {
+    public String generateRandomPassword() {
         String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         int length = 10;
         SecureRandom random = new SecureRandom();
