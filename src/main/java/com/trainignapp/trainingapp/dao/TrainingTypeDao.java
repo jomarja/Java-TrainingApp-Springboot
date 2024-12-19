@@ -9,11 +9,14 @@ import java.util.Optional;
 
 @Component
 public class TrainingTypeDao {
-    @Autowired
     private TrainingTypeRepository repository;
+
+    @Autowired
+    public TrainingTypeDao(TrainingTypeRepository repository) {
+        this.repository = repository;
+    }
 
     public Optional<TrainingType> findByName(String trainingTypeName) {
         return repository.findByTrainingTypeName(trainingTypeName);
     }
-
 }

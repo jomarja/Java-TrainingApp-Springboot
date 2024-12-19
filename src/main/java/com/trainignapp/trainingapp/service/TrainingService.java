@@ -20,63 +20,52 @@ import java.util.stream.Collectors;
 
 @Service
 public class TrainingService {
-    private static final Logger logger = LoggerFactory.getLogger(TraineeService.class);
-    @Autowired
-    private TrainingDao trainingDao;
-    @Autowired
-    private TrainerDao trainerDao;
-    @Autowired
-    private TraineeDao traineeDao;
-    @Autowired
-    private TrainingTypeDao trainingTypeDao;
+    private static final Logger logger = LoggerFactory.getLogger(TrainingService.class);
+    private final TrainingDao trainingDao;
+    private final TrainerDao trainerDao;
+    private final TraineeDao traineeDao;
+    private final TrainingTypeDao trainingTypeDao;
 
+    @Autowired
+    public TrainingService(TrainingDao trainingDao, TrainerDao trainerDao, TraineeDao traineeDao, TrainingTypeDao trainingTypeDao) {
+        this.trainingDao = trainingDao;
+        this.trainerDao = trainerDao;
+        this.traineeDao = traineeDao;
+        this.trainingTypeDao = trainingTypeDao;
+    }
 
     @Transactional
     public List<Training> getTraineeTrainingsByCriteria(String traineeUsername, Date fromDate, Date toDate, String trainerName, String trainingType) {
-        traineeDao.findByUsername(traineeUsername)
-                .orElseThrow(() -> new RuntimeException("Trainee not found"));
+        traineeDao.findByUsername(traineeUsername).orElseThrow(() -> new RuntimeException("Trainee Not Found: {}"));
 
-
-        List<Training> trainings = trainingDao.findByDate(
-                traineeUsername, fromDate, toDate);
+        List<Training> trainings = trainingDao.findByDate(traineeUsername, fromDate, toDate);
 
         // Additional filtering for trainer name and training type
-        return trainings.stream()
-                .filter(training -> (trainerName == null || training.getTrainer().getUsername().equals(trainerName)))
-                .filter(training -> (trainingType == null || training.getTrainingType().getTrainingTypeName().equals(trainingType)))
-                .collect(Collectors.toList());
+        return trainings.stream().filter(training -> (trainerName == null || training.getTrainer().getUsername().equals(trainerName))).filter(training -> (trainingType == null || training.getTrainingType().getTrainingTypeName().equals(trainingType))).collect(Collectors.toList());
     }
 
     @Transactional
     public List<Training> getTrainerTrainingsByCriteria(String trainerUsername, Date fromDate, Date toDate, String traineeName) {
-        trainerDao.findByUsername(trainerUsername)
-                .orElseThrow(() -> new RuntimeException("Trainee not found"));
+        trainerDao.findByUsername(trainerUsername).orElseThrow(() -> new RuntimeException("Trainee Not Found: {}"));
 
-
-        List<Training> trainings = trainingDao.findByDate(
-                trainerUsername, fromDate, toDate);
+        List<Training> trainings = trainingDao.findByDate(trainerUsername, fromDate, toDate);
 
         // Additional filtering for trainee name
-        return trainings.stream()
-                .filter(training -> (traineeName == null || training.getTrainee().getUsername().equals(traineeName)))
-                .collect(Collectors.toList());
+        return trainings.stream().filter(training -> (traineeName == null || training.getTrainee().getUsername().equals(traineeName))).collect(Collectors.toList());
     }
 
     @Transactional
     public void addTraining(String traineeUsername, String trainerUsername, String trainingTypeName, Training training) {
-        Trainee trainee = traineeDao.findByUsername(traineeUsername)
-                .orElseThrow(() -> new RuntimeException("Trainee not found"));
-        Trainer trainer = trainerDao.findByUsername(trainerUsername)
-                .orElseThrow(() -> new RuntimeException("Trainer not found"));
-        TrainingType trainingType = trainingTypeDao.findByName(trainingTypeName)
-                .orElseThrow(() -> new RuntimeException("Training Type not found"));
+        Trainee trainee = traineeDao.findByUsername(traineeUsername).orElseThrow(() -> new RuntimeException("Trainee not found"));
+        Trainer trainer = trainerDao.findByUsername(trainerUsername).orElseThrow(() -> new RuntimeException("Trainer not found"));
+        TrainingType trainingType = trainingTypeDao.findByName(trainingTypeName).orElseThrow(() -> new RuntimeException("Training Type not found"));
 
         training.setTrainee(trainee);
         training.setTrainer(trainer);
         training.setTrainingType(trainingType);
 
         trainingDao.save(training);
-        logger.info("training added", trainee.getFirstName());
+        logger.info("Training added: {}", trainee.getUsername());
     }
 
     public List<Trainer> getUnassignedTrainersForTrainee(String traineeUsername) {
@@ -84,42 +73,34 @@ public class TrainingService {
         List<Trainer> allTrainers = trainerDao.findAll();
 
         // Filter trainers not linked to this trainee
-        return allTrainers.stream()
-                .filter(trainer -> trainingDao.findByUsernames(
-                        trainer.getUsername(), traineeUsername).isEmpty())
-                .collect(Collectors.toList());
+        return allTrainers.stream().filter(trainer -> trainingDao.findByUsernames(trainer.getUsername(), traineeUsername).isEmpty()).collect(Collectors.toList());
     }
-
 
     @Transactional
     public void updateTraineeTrainers(String traineeUsername, List<String> trainerUsernames) {
         // Fetch trainee
-        Trainee trainee = traineeDao.findByUsername(traineeUsername)
-                .orElseThrow(() -> new RuntimeException("Trainee not found"));
+        Trainee trainee = traineeDao.findByUsername(traineeUsername).orElseThrow(() -> new RuntimeException("Trainee not found"));
 
         // Fetch trainers
-        List<Trainer> trainers = trainerDao.findAll().stream()
-                .filter(trainer -> trainerUsernames.contains(trainer.getUsername()))
-                .collect(Collectors.toList());
+        List<Trainer> trainers = trainerDao.findAll().stream().filter(trainer -> trainerUsernames.contains(trainer.getUsername())).collect(Collectors.toList());
 
         // Delete existing trainings
         List<Training> existingTrainings = trainingDao.findByTraineeUsername(traineeUsername);
         trainingDao.deleteAll(existingTrainings);
 
         // Assign new trainings
-        List<Training> newTrainings = trainers.stream()
-                .map(trainer -> {
-                    Training training = new Training();
-                    training.setTrainee(trainee);
-                    training.setTrainer(trainer);
-                    training.setTrainingDate(new java.sql.Date(System.currentTimeMillis()));
-                    training.setTrainingName("Updated Training");
-                    training.setTrainingDuration(1); // Default duration
-                    return training;
-                }).collect(Collectors.toList());
+        List<Training> newTrainings = trainers.stream().map(trainer -> {
+            Training training = new Training();
+            training.setTrainee(trainee);
+            training.setTrainer(trainer);
+            training.setTrainingDate(new java.sql.Date(System.currentTimeMillis()));
+            training.setTrainingName("Updated Training");
+            training.setTrainingDuration(1); // Default duration
+            return training;
+        }).collect(Collectors.toList());
 
         trainingDao.saveAll(newTrainings);
-        logger.info("all new trainings saved", trainee.getFirstName());
+        logger.info("All New Trainings Saved: {}", trainee.getFirstName());
     }
 
     public Training select(String name) {

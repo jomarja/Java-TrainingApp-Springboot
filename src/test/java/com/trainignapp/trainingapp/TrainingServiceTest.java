@@ -4,7 +4,10 @@ import com.trainignapp.trainingapp.dao.TraineeDao;
 import com.trainignapp.trainingapp.dao.TrainerDao;
 import com.trainignapp.trainingapp.dao.TrainingDao;
 import com.trainignapp.trainingapp.dao.TrainingTypeDao;
-import com.trainignapp.trainingapp.model.*;
+import com.trainignapp.trainingapp.model.Trainee;
+import com.trainignapp.trainingapp.model.Trainer;
+import com.trainignapp.trainingapp.model.Training;
+import com.trainignapp.trainingapp.model.TrainingType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -16,8 +19,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class TrainingServiceTest {
 

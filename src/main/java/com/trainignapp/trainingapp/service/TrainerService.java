@@ -12,19 +12,17 @@ import java.util.Random;
 
 @Service
 public class TrainerService {
-    private static final Logger logger = LoggerFactory.getLogger(TraineeService.class);
-    private TrainerDao trainerDao;
-
+    private static final Logger logger = LoggerFactory.getLogger(TrainerService.class);
+    private final TrainerDao trainerDao;
 
     @Autowired
     public TrainerService(TrainerDao trainerDao) {
         this.trainerDao = trainerDao;
 
-
     }
 
     public void createTrainer(Trainer trainer) {
-        logger.info("Creating a new trainer: {}", trainer.getFirstName());
+        logger.info("Creating a new trainer: {}", trainer.getUsername());
         String username = generateUniqueUsername(trainer.getFirstName(), trainer.getLastName());
         String password = generateRandomPassword();
 
@@ -32,13 +30,15 @@ public class TrainerService {
         trainer.setPassword(password);
 
         trainerDao.save(trainer);
-        logger.info("trainee created", trainer.getUsername());
+        logger.info("Trainer Created: {}", trainer.getUsername());
     }
 
     public boolean authenticateTrainer(String username, String password) {
         if (trainerDao.findByUsername(username).isPresent()) {
             return trainerDao.findByUsername(username).get().getPassword().equals(password);
-        } else throw new RuntimeException("Wrong username");
+        } else {
+            throw new RuntimeException("Wrong username");
+        }
 
     }
 
@@ -51,34 +51,52 @@ public class TrainerService {
         if (authenticateTrainer(username, trainer.getPassword())) {
             trainer.setPassword(newPassword);
             trainerDao.save(trainer);
-        } else new RuntimeException("Authentificate First Please");
+        } else {
+            throw new RuntimeException("Authentificate First Please");
+        }
 
     }
 
-    public void updateProfile(String username, Trainer newtrainer) {
+    public void updateProfile(String username, Trainer newTrainer) {
+        // Fetch the existing trainer
         Trainer oldTrainer = select(username);
-        if (authenticateTrainer(username, newtrainer.getPassword())) {
-            oldTrainer.setSpecialization(newtrainer.getSpecialization());
-            oldTrainer.setUsername(newtrainer.getUsername());
-            oldTrainer.setFirstName(newtrainer.getFirstName());
-            oldTrainer.setLastName(newtrainer.getLastName());
-            oldTrainer.setPassword(newtrainer.getPassword());
-            oldTrainer.setIsActive(newtrainer.getIsActive());
-            trainerDao.save(oldTrainer);
-            logger.info("trainer profile updated", newtrainer);
-        } else new RuntimeException("Authentificate First Please");
+
+        // Ensure authentication
+        if (!authenticateTrainer(username, newTrainer.getPassword())) {
+            throw new RuntimeException("Authenticate First Please");
+        }
+
+        // Update fields
+        oldTrainer.setSpecialization(newTrainer.getSpecialization());
+        oldTrainer.setUsername(newTrainer.getUsername());
+        oldTrainer.setFirstName(newTrainer.getFirstName());
+        oldTrainer.setLastName(newTrainer.getLastName());
+        oldTrainer.setPassword(newTrainer.getPassword());
+        oldTrainer.setIsActive(newTrainer.getIsActive());
+
+        // Save changes
+        trainerDao.save(oldTrainer);
+
+        // Log the update
+        logger.info("Trainer profile updated successfully for username: {}", oldTrainer.getUsername());
     }
 
     public void deactivateTrainer(String username) {
         Trainer trainer = select(username);
-        if (!authenticateTrainer(username, trainer.getPassword())) {
-            new RuntimeException("Authentificate First Please");
-        } else {
-            trainer.setIsActive(!trainer.getIsActive());
-            trainerDao.save(trainer);
-            logger.info("trainer active status changed to: ", trainer.getIsActive());
 
+        // Ensure the trainer is authenticated
+        if (!authenticateTrainer(username, trainer.getPassword())) {
+            throw new RuntimeException("Authenticate First Please");
         }
+
+        // Toggle the 'isActive' status
+        trainer.setIsActive(!trainer.getIsActive());
+
+        // Save the updated trainer
+        trainerDao.save(trainer);
+
+        // Log the updated status
+        logger.info("Trainer active status changed: {}", trainer.getIsActive());
     }
 
 

@@ -10,9 +10,12 @@ import java.util.Optional;
 
 @Component
 public class TrainerDao {
-    @Autowired
     private TrainerRepository repository;
 
+    @Autowired
+    public TrainerDao(TrainerRepository repository) {
+        this.repository = repository;
+    }
 
     public void save(Trainer trainer) {
         repository.save(trainer);
@@ -21,7 +24,6 @@ public class TrainerDao {
     public Optional<Trainer> findByUsername(String username) {
         return repository.findByUsername(username);
     }
-
 
     public List<Trainer> findAll() {
         return repository.findAll();

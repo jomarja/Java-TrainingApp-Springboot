@@ -13,7 +13,7 @@ import java.util.Random;
 @Service
 public class TraineeService {
     private static final Logger logger = LoggerFactory.getLogger(TraineeService.class);
-    private TraineeDao traineeDao;
+    private final TraineeDao traineeDao;
 
     @Autowired
     public TraineeService(TraineeDao traineeDao) {
@@ -21,7 +21,7 @@ public class TraineeService {
     }
 
     public void createTrainee(Trainee trainee) {
-        logger.info("Creating a new trainee: {}", trainee.getFirstName());
+        logger.info("Creating a new trainee: {}", trainee.getUsername());
         String username = generateUniqueUsername(trainee.getFirstName(), trainee.getLastName());
         String password = generateRandomPassword();
 
@@ -29,14 +29,15 @@ public class TraineeService {
         trainee.setPassword(password);
 
         traineeDao.save(trainee);
-        logger.info("trainee created", trainee.getUsername());
+        logger.info("Trainee Created: {}", trainee.getUsername());
     }
-
 
     public boolean authenticateTrainee(String username, String password) {
         if (traineeDao.findByUsername(username).isPresent()) {
             return traineeDao.findByUsername(username).get().getPassword().equals(password);
-        } else return false;
+        } else {
+            return false;
+        }
     }
 
     public Trainee select(String username) {
@@ -48,7 +49,9 @@ public class TraineeService {
         if (authenticateTrainee(username, trainer.getPassword())) {
             trainer.setPassword(newPassword);
             traineeDao.save(trainer);
-        } else new RuntimeException("Authentificate First Please");
+        } else {
+            throw new RuntimeException("Authentificate First Please");
+        }
     }
 
     public void updateProfile(String username, Trainee newtrainee) {
@@ -60,8 +63,10 @@ public class TraineeService {
             oldTrainer.setPassword(newtrainee.getPassword());
             oldTrainer.setIsActive(newtrainee.getIsActive());
             traineeDao.save(oldTrainer);
-            logger.info("trainee profile updated", newtrainee);
-        } else new RuntimeException("Authentificate First Please");
+            logger.info("Trainee Profile Updated: {}", newtrainee.getUsername());
+        } else {
+            new RuntimeException("Authentificate First Please");
+        }
     }
 
     public void deactivateTrainee(String username) {
@@ -71,7 +76,7 @@ public class TraineeService {
         } else {
             trainer.setIsActive(!trainer.getIsActive());
             traineeDao.save(trainer);
-            logger.info("trainee active status changed to: ", trainer.getIsActive());
+            logger.info("Trainee active status changed: {}", trainer.getIsActive());
         }
     }
 
@@ -79,8 +84,10 @@ public class TraineeService {
         Trainee trainee = select(username);
         if (authenticateTrainee(username, trainee.getPassword())) {
             traineeDao.delete(trainee);
-            logger.info("trainee deleted", trainee.getFirstName());
-        } else new RuntimeException("Authentificate First Please");
+            logger.info("Trainee deleted: {}", trainee.getUsername());
+        } else {
+            throw new RuntimeException("Authentificate please: {}");
+        }
 
     }
 
@@ -89,24 +96,22 @@ public class TraineeService {
         String username = baseUsername;
         Random random = new Random();
 
-
         while (isUsernameTaken(username)) {
 
             int randomNumber = random.nextInt(1000);
             username = baseUsername + randomNumber;
         }
-        logger.info("The uname is", username);
+        logger.info("Uname is: {}", username);
         return username;
     }
 
     private boolean isUsernameTaken(String username) {
         for (Trainee trainee : traineeDao.findAll()) {
             if (trainee.getUsername().equals(username)) {
-                logger.info("uname taken:", true);
+                logger.info("Uname Taken: {}", trainee.getUsername());
                 return true;
             }
         }
-        logger.info("uname taken:", false);
         return false;
     }
 

@@ -11,10 +11,12 @@ import java.util.Optional;
 
 @Component
 public class TrainingDao {
-
-    @Autowired
     private TrainingRepository repository;
 
+    @Autowired
+    public TrainingDao(TrainingRepository repository) {
+        this.repository = repository;
+    }
 
     public List<Training> findByDate(String username, Date fromDate, Date toDate) {
         return repository.findByTrainee_UsernameAndTrainingDateBetween(username, fromDate, toDate);
@@ -28,8 +30,8 @@ public class TrainingDao {
         repository.save(training);
     }
 
-    public void saveAll(List<Training> Trainings) {
-        repository.saveAll(Trainings);
+    public void saveAll(List<Training> trainings) {
+        repository.saveAll(trainings);
     }
 
     public void deleteAll(List<Training> training) {

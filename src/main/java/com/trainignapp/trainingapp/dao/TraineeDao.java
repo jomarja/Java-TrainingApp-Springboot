@@ -10,10 +10,12 @@ import java.util.Optional;
 
 @Component
 public class TraineeDao {
-
-    @Autowired
     private TraineeRepository repository;
 
+    @Autowired
+    public TraineeDao(TraineeRepository repository) {
+        this.repository = repository;
+    }
 
     public void save(Trainee trainee) {
         repository.save(trainee);

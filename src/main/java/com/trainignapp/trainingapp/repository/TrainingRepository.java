@@ -10,11 +10,9 @@ import java.util.Optional;
 
 @Repository
 public interface TrainingRepository extends JpaRepository<Training, Long> {
-    List<Training> findByTrainee_UsernameAndTrainingDateBetween(
-            String traineeUsername, Date fromDate, Date toDate);
+    List<Training> findByTrainee_UsernameAndTrainingDateBetween(String traineeUsername, Date fromDate, Date toDate);
 
-    List<Training> findByTrainer_UsernameAndTrainee_Username(
-            String trainerUsername, String traineeUsername);
+    List<Training> findByTrainer_UsernameAndTrainee_Username(String trainerUsername, String traineeUsername);
 
     Optional<Training> findBytrainingName(String name);
 

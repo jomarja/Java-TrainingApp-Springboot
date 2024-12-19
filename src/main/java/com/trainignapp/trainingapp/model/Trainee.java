@@ -1,12 +1,15 @@
 package com.trainignapp.trainingapp.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.Date;
 
-@Entity
+@EqualsAndHashCode(callSuper = true)
 @Data
+@Entity
 public class Trainee extends User {
     @Column
     private String address;

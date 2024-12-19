@@ -5,13 +5,12 @@ import lombok.Data;
 
 import java.util.Date;
 
-@Entity
 @Data
+@Entity
 public class Training {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
 
     @ManyToOne
     @JoinColumn(name = "trainee_id", nullable = false)

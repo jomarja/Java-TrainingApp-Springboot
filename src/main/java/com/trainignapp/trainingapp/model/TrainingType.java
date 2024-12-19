@@ -3,8 +3,8 @@ package com.trainignapp.trainingapp.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-@Entity
 @Data
+@Entity
 public class TrainingType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

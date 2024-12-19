@@ -1,11 +1,14 @@
 package com.trainignapp.trainingapp.model;
-import jakarta.persistence.*;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
-@Entity
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@EqualsAndHashCode(callSuper = true)
 @Data
+@Entity
 public class Trainer extends User {
     @ManyToOne
     @JoinColumn(name = "specialization_id", referencedColumnName = "trainingTypeName", nullable = false)
