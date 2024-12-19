@@ -14,6 +14,7 @@ import java.util.Random;
 public class TraineeService {
     private static final Logger logger = LoggerFactory.getLogger(TraineeService.class);
     private final TraineeDao traineeDao;
+    Random random;
 
     @Autowired
     public TraineeService(TraineeDao traineeDao) {
@@ -33,11 +34,7 @@ public class TraineeService {
     }
 
     public boolean authenticateTrainee(String username, String password) {
-        if (traineeDao.findByUsername(username).isPresent()) {
-            return traineeDao.findByUsername(username).get().getPassword().equals(password);
-        } else {
-            return false;
-        }
+        return traineeDao.findByUsername(username).map(trainee -> trainee.getPassword().equals(password)).orElse(false);
     }
 
     public Trainee select(String username) {
@@ -50,7 +47,7 @@ public class TraineeService {
             trainer.setPassword(newPassword);
             traineeDao.save(trainer);
         } else {
-            throw new RuntimeException("Authentificate First Please");
+            throw new IllegalArgumentException("Authentificate First Please: {}");
         }
     }
 
@@ -65,14 +62,14 @@ public class TraineeService {
             traineeDao.save(oldTrainer);
             logger.info("Trainee Profile Updated: {}", newtrainee.getUsername());
         } else {
-            new RuntimeException("Authentificate First Please");
+            throw new IllegalArgumentException("Authentificate First Please");
         }
     }
 
     public void deactivateTrainee(String username) {
         Trainee trainer = select(username);
         if (!authenticateTrainee(username, trainer.getPassword())) {
-            new RuntimeException("Authentificate First Please");
+            throw new IllegalArgumentException("Authentificate First Please");
         } else {
             trainer.setIsActive(!trainer.getIsActive());
             traineeDao.save(trainer);
@@ -86,15 +83,14 @@ public class TraineeService {
             traineeDao.delete(trainee);
             logger.info("Trainee deleted: {}", trainee.getUsername());
         } else {
-            throw new RuntimeException("Authentificate please: {}");
+            throw new IllegalArgumentException("Authentificate please: {}");
         }
-
     }
 
     private String generateUniqueUsername(String firstName, String lastName) {
         String baseUsername = firstName + "." + lastName;
         String username = baseUsername;
-        Random random = new Random();
+        random = new Random();
 
         while (isUsernameTaken(username)) {
 
@@ -115,16 +111,16 @@ public class TraineeService {
         return false;
     }
 
+    String chatachters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    int length = 10;
+
     public String generateRandomPassword() {
-        String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        int length = 10;
-        SecureRandom random = new SecureRandom();
+        random = new SecureRandom();
         StringBuilder stringBuilder = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
-            int index = random.nextInt(CHARACTERS.length());
-            stringBuilder.append(CHARACTERS.charAt(index));
+            int index = random.nextInt(chatachters.length());
+            stringBuilder.append(chatachters.charAt(index));
         }
         return stringBuilder.toString();
     }
-
 }

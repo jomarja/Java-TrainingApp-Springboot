@@ -14,11 +14,11 @@ import java.util.Random;
 public class TrainerService {
     private static final Logger logger = LoggerFactory.getLogger(TrainerService.class);
     private final TrainerDao trainerDao;
+    Random random;
 
     @Autowired
     public TrainerService(TrainerDao trainerDao) {
         this.trainerDao = trainerDao;
-
     }
 
     public void createTrainer(Trainer trainer) {
@@ -34,12 +34,7 @@ public class TrainerService {
     }
 
     public boolean authenticateTrainer(String username, String password) {
-        if (trainerDao.findByUsername(username).isPresent()) {
-            return trainerDao.findByUsername(username).get().getPassword().equals(password);
-        } else {
-            throw new RuntimeException("Wrong username");
-        }
-
+        return trainerDao.findByUsername(username).map(trainer -> trainer.getPassword().equals(password)).orElseThrow(() -> new IllegalArgumentException("Wrong username"));
     }
 
     public Trainer select(String username) {
@@ -52,9 +47,8 @@ public class TrainerService {
             trainer.setPassword(newPassword);
             trainerDao.save(trainer);
         } else {
-            throw new RuntimeException("Authentificate First Please");
+            throw new IllegalArgumentException("Authentificate First Please: {}");
         }
-
     }
 
     public void updateProfile(String username, Trainer newTrainer) {
@@ -63,7 +57,7 @@ public class TrainerService {
 
         // Ensure authentication
         if (!authenticateTrainer(username, newTrainer.getPassword())) {
-            throw new RuntimeException("Authenticate First Please");
+            throw new IllegalArgumentException("Authenticate First Please");
         }
 
         // Update fields
@@ -86,7 +80,7 @@ public class TrainerService {
 
         // Ensure the trainer is authenticated
         if (!authenticateTrainer(username, trainer.getPassword())) {
-            throw new RuntimeException("Authenticate First Please");
+            throw new IllegalArgumentException("Authenticate First Please");
         }
 
         // Toggle the 'isActive' status
@@ -99,11 +93,10 @@ public class TrainerService {
         logger.info("Trainer active status changed: {}", trainer.getIsActive());
     }
 
-
     private String generateUniqueUsername(String firstName, String lastName) {
         String baseUsername = firstName + "." + lastName;
         String username = baseUsername;
-        Random random = new Random();
+        random = new Random();
 
         // Check for uniqueness and add a random number suffix if necessary
         while (isUsernameTaken(username)) {
@@ -123,13 +116,13 @@ public class TrainerService {
     }
 
     public String generateRandomPassword() {
-        String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        String charachter = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         int length = 10;
-        SecureRandom random = new SecureRandom();
+        random = new SecureRandom();
         StringBuilder stringBuilder = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
-            int index = random.nextInt(CHARACTERS.length());
-            stringBuilder.append(CHARACTERS.charAt(index));
+            int index = random.nextInt(charachter.length());
+            stringBuilder.append(charachter.charAt(index));
         }
 
         return stringBuilder.toString();

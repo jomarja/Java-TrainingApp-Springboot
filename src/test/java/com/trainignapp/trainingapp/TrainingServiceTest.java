@@ -1,4 +1,4 @@
-package com.trainignapp.trainingapp.service;
+package com.trainignapp.trainingapp;
 
 import com.trainignapp.trainingapp.dao.TraineeDao;
 import com.trainignapp.trainingapp.dao.TrainerDao;
@@ -8,6 +8,7 @@ import com.trainignapp.trainingapp.model.Trainee;
 import com.trainignapp.trainingapp.model.Trainer;
 import com.trainignapp.trainingapp.model.Training;
 import com.trainignapp.trainingapp.model.TrainingType;
+import com.trainignapp.trainingapp.service.TrainingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

@@ -18,10 +18,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TraineeServiceTest {
-
     @Mock
     private TraineeDao traineeDao;
-
     @InjectMocks
     private TraineeService traineeService;
 
