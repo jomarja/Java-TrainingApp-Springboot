@@ -1,30 +1,31 @@
 package com.trainignapp.trainingapp.dao;
 
 import com.trainignapp.trainingapp.model.Trainer;
+import com.trainignapp.trainingapp.repository.TrainerRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.Optional;
 
 @Component
 public class TrainerDao {
-    Map<Integer, Trainer> trainerStroage = new HashMap<>();
+    private TrainerRepository repository;
 
-    public void create(Trainer trainer) {
-        trainerStroage.put(trainer.getId(), trainer);
+    @Autowired
+    public TrainerDao(TrainerRepository repository) {
+        this.repository = repository;
     }
 
-
-    public void update(Trainer trainer) {
-        trainerStroage.replace(trainer.getId(), trainer);
+    public void save(Trainer trainer) {
+        repository.save(trainer);
     }
 
-    public Trainer select(int id) {
-        return trainerStroage.get(id);
+    public Optional<Trainer> findByUsername(String username) {
+        return repository.findByUsername(username);
     }
 
-    public Collection<Trainer> getAllTrainers() {
-        return trainerStroage.values();
+    public List<Trainer> findAll() {
+        return repository.findAll();
     }
 }
