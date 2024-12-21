@@ -7,15 +7,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-
 import java.security.SecureRandom;
 import java.util.Random;
 
 @Service
 public class TraineeService {
     private static final Logger logger = LoggerFactory.getLogger(TraineeService.class);
-    private TraineeDao traineeDao;
-
+    private final TraineeDao traineeDao;
+    Random random;
 
     @Autowired
     public TraineeService(TraineeDao traineeDao) {
@@ -23,64 +22,105 @@ public class TraineeService {
     }
 
     public void createTrainee(Trainee trainee) {
-        logger.info("Creating a new trainee: {}", trainee.getFirstName());
+        logger.info("Creating a new trainee: {}", trainee.getUsername());
         String username = generateUniqueUsername(trainee.getFirstName(), trainee.getLastName());
         String password = generateRandomPassword();
 
-        trainee.setUserName(username);
+        trainee.setUsername(username);
         trainee.setPassword(password);
 
-        traineeDao.create(trainee);
+        traineeDao.save(trainee);
+        logger.info("Trainee Created: {}", trainee.getUsername());
     }
 
-    public void updateTrainee(Trainee trainee) {
-        traineeDao.update(trainee);
+    public boolean authenticateTrainee(String username, String password) {
+        return traineeDao.findByUsername(username).map(trainee -> trainee.getPassword().equals(password)).orElse(false);
     }
 
-    public void deleteTrainee(int userId) {
-        traineeDao.delete(userId);
+    public Trainee select(String username) {
+        return traineeDao.findByUsername(username).orElse(null);
     }
 
-    public Trainee getTrainee(int userId) {
-        return traineeDao.select(userId);
+    public void updateTraineePassword(String username, String newPassword) {
+        Trainee trainer = select(username);
+        if (authenticateTrainee(username, trainer.getPassword())) {
+            trainer.setPassword(newPassword);
+            traineeDao.save(trainer);
+        } else {
+            throw new IllegalArgumentException("Authentificate First Please: {}");
+        }
+    }
+
+    public void updateProfile(String username, Trainee newtrainee) {
+        Trainee oldTrainer = select(username);
+        if (authenticateTrainee(username, newtrainee.getPassword())) {
+            oldTrainer.setUsername(newtrainee.getUsername());
+            oldTrainer.setFirstName(newtrainee.getFirstName());
+            oldTrainer.setLastName(newtrainee.getLastName());
+            oldTrainer.setPassword(newtrainee.getPassword());
+            oldTrainer.setIsActive(newtrainee.getIsActive());
+            traineeDao.save(oldTrainer);
+            logger.info("Trainee Profile Updated: {}", newtrainee.getUsername());
+        } else {
+            throw new IllegalArgumentException("Authentificate First Please");
+        }
+    }
+
+    public void deactivateTrainee(String username) {
+        Trainee trainer = select(username);
+        if (!authenticateTrainee(username, trainer.getPassword())) {
+            throw new IllegalArgumentException("Authentificate First Please");
+        } else {
+            trainer.setIsActive(!trainer.getIsActive());
+            traineeDao.save(trainer);
+            logger.info("Trainee active status changed: {}", trainer.getIsActive());
+        }
+    }
+
+    public void deleteTrainee(String username) {
+        Trainee trainee = select(username);
+        if (authenticateTrainee(username, trainee.getPassword())) {
+            traineeDao.delete(trainee);
+            logger.info("Trainee deleted: {}", trainee.getUsername());
+        } else {
+            throw new IllegalArgumentException("Authentificate please: {}");
+        }
     }
 
     private String generateUniqueUsername(String firstName, String lastName) {
         String baseUsername = firstName + "." + lastName;
         String username = baseUsername;
-        Random random = new Random();
-
+        random = new Random();
 
         while (isUsernameTaken(username)) {
 
             int randomNumber = random.nextInt(1000);
             username = baseUsername + randomNumber;
         }
-        logger.info("The uname is", username);
+        logger.info("Uname is: {}", username);
         return username;
     }
 
     private boolean isUsernameTaken(String username) {
-        for (Trainee trainee : traineeDao.getAllTrainees()) {
-            if (trainee.getUserName().equals(username)) {
-                logger.info("uname taken:", true);
+        for (Trainee trainee : traineeDao.findAll()) {
+            if (trainee.getUsername().equals(username)) {
+                logger.info("Uname Taken: {}", trainee.getUsername());
                 return true;
             }
         }
-        logger.info("uname taken:", false);
         return false;
     }
 
-    private String generateRandomPassword() {
-        String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        int length = 10;
-        SecureRandom random = new SecureRandom();
+    String chatachters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    int length = 10;
+
+    public String generateRandomPassword() {
+        random = new SecureRandom();
         StringBuilder stringBuilder = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
-            int index = random.nextInt(CHARACTERS.length());
-            stringBuilder.append(CHARACTERS.charAt(index));
+            int index = random.nextInt(chatachters.length());
+            stringBuilder.append(chatachters.charAt(index));
         }
         return stringBuilder.toString();
     }
-
 }

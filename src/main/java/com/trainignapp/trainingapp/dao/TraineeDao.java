@@ -1,31 +1,35 @@
 package com.trainignapp.trainingapp.dao;
 
 import com.trainignapp.trainingapp.model.Trainee;
+import com.trainignapp.trainingapp.repository.TraineeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 @Component
 public class TraineeDao {
-    private Map<Integer, Trainee> traineeStorage = new HashMap<>();
+    private TraineeRepository repository;
 
-    public void create(Trainee trainee) {
-        traineeStorage.put(trainee.getId(), trainee);
+    @Autowired
+    public TraineeDao(TraineeRepository repository) {
+        this.repository = repository;
     }
 
-    public void update(Trainee trainee) {
-        traineeStorage.replace(trainee.getId(), trainee);
+    public void save(Trainee trainee) {
+        repository.save(trainee);
     }
 
-    public void delete(int id) {
-        traineeStorage.remove(id);
+    public Optional<Trainee> findByUsername(String username) {
+        return repository.findByUsername(username);
     }
 
-    public Trainee select(int id) {
-        return traineeStorage.get(id);
+    public void delete(Trainee trainee) {
+        repository.delete(trainee);
     }
 
-    public Collection<Trainee> getAllTrainees() {
-        return traineeStorage.values();
+    public List<Trainee> findAll() {
+        return repository.findAll();
     }
 }

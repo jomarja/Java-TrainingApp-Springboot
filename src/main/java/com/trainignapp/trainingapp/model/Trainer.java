@@ -1,39 +1,16 @@
 package com.trainignapp.trainingapp.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@EqualsAndHashCode(callSuper = true)
+@Data
+@Entity
 public class Trainer extends User {
-
-    private String specialization;
-    private int userId;
-
-    public Trainer(int id, String firstName, String lastName, String userName, String password, Boolean isActive, String specialization, int userId) {
-        super(id, firstName, lastName, userName, password, isActive);
-        this.specialization = specialization;
-        this.userId = userId;
-    }
-    public Trainer(){
-        super();
-    }
-
-    public Trainer(int id, String firstName, String lastName, String userName, String password, Boolean isActive) {
-        super(id, firstName, lastName, userName, password, isActive);
-    }
-
-
-    public String getSpecialization() {
-        return specialization;
-    }
-
-    public void setSpecialization(String specialization) {
-        this.specialization = specialization;
-    }
-
-    public int getUserId() {
-        return userId;
-    }
-
-    public void setUserId(int userId) {
-        this.userId = userId;
-    }
-
-
+    @ManyToOne
+    @JoinColumn(name = "specialization_id", referencedColumnName = "trainingTypeName", nullable = false)
+    private TrainingType specialization;
 }
