@@ -7,6 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 class TrainingappApplicationTests {
     @Test
     void contextLoads() {
+        //for test case
     }
-
 }

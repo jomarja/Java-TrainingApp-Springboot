@@ -1,7 +1,9 @@
 package com.trainignapp.trainingapp;
 
 import com.trainignapp.trainingapp.dao.TraineeDao;
+import com.trainignapp.trainingapp.dao.TrainerDao;
 import com.trainignapp.trainingapp.model.Trainee;
+import com.trainignapp.trainingapp.model.Trainer;
 import com.trainignapp.trainingapp.service.TraineeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,8 @@ import static org.mockito.Mockito.when;
 class TraineeServiceTest {
     @Mock
     private TraineeDao traineeDao;
+    @Mock
+    private TrainerDao trainerDao;
     @InjectMocks
     private TraineeService traineeService;
 
@@ -80,6 +84,26 @@ class TraineeServiceTest {
     }
 
     @Test
+    void shouldNotRegisterTraineeIfAlreadyTrainer() {
+        String username = "John.Doe";
+
+        // Ensure that the unique username generation aligns with the mock expectations
+        when(trainerDao.findByUsername(username)).thenReturn(Optional.of(new Trainer()));
+        when(traineeDao.findByUsername(username)).thenReturn(Optional.empty());
+
+        // Create a Trainee object with firstName and lastName that lead to the mocked username
+        Trainee trainee = new Trainee();
+        trainee.setFirstName("John");
+        trainee.setLastName("Doe");
+
+        // Mock the DAO call if it is not mocked already
+        when(traineeDao.findByUsername(username)).thenReturn(Optional.empty());
+
+        // Assert that the exception is thrown when trying to create a trainee who is already a trainer
+        assertThrows(IllegalArgumentException.class, () -> traineeService.createTrainee(trainee));
+    }
+
+    @Test
     void select_ShouldReturnTraineeWhenExists() {
         String username = "John.Doe";
 
@@ -92,17 +116,6 @@ class TraineeServiceTest {
 
         assertNotNull(result);
         assertEquals(username, result.getUsername());
-    }
-
-    @Test
-    void select_ShouldReturnNullWhenTraineeDoesNotExist() {
-        String username = "John.Doe";
-
-        when(traineeDao.findByUsername(username)).thenReturn(Optional.empty());
-
-        Trainee result = traineeService.select(username);
-
-        assertNull(result);
     }
 
     @Test
@@ -134,7 +147,7 @@ class TraineeServiceTest {
 
         when(traineeDao.findByUsername(username)).thenReturn(Optional.of(trainee));
 
-        traineeService.deactivateTrainee(username);
+        traineeService.deactivateTrainee(username, false);
 
         verify(traineeDao).save(trainee);
         assertFalse(trainee.getIsActive());

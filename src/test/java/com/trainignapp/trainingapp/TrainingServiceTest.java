@@ -4,6 +4,8 @@ import com.trainignapp.trainingapp.dao.TraineeDao;
 import com.trainignapp.trainingapp.dao.TrainerDao;
 import com.trainignapp.trainingapp.dao.TrainingDao;
 import com.trainignapp.trainingapp.dao.TrainingTypeDao;
+import com.trainignapp.trainingapp.dto.TraineeTrainingResponse;
+import com.trainignapp.trainingapp.dto.TrainerDetails;
 import com.trainignapp.trainingapp.model.Trainee;
 import com.trainignapp.trainingapp.model.Trainer;
 import com.trainignapp.trainingapp.model.Training;
@@ -25,19 +27,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TrainingServiceTest {
-
     @Mock
     private TrainingDao trainingDao;
-
     @Mock
     private TrainerDao trainerDao;
-
     @Mock
     private TraineeDao traineeDao;
-
     @Mock
     private TrainingTypeDao trainingTypeDao;
-
     @InjectMocks
     private TrainingService trainingService;
 
@@ -49,33 +46,46 @@ class TrainingServiceTest {
     @Test
     void getTraineeTrainingsByCriteria_ShouldReturnFilteredTrainings() {
         String traineeUsername = "john.doe";
-        Date fromDate = new Date();
+        Date fromDate = new Date(System.currentTimeMillis() - 86400000); // 1 day ago
         Date toDate = new Date();
         String trainerName = "alice.smith";
         String trainingType = "Math";
 
+        // Mock Trainee
         Trainee trainee = new Trainee();
         trainee.setUsername(traineeUsername);
 
+        // Mock Trainer
         Trainer trainer = new Trainer();
         trainer.setUsername(trainerName);
 
+        // Mock TrainingType
         TrainingType type = new TrainingType();
         type.setTrainingTypeName(trainingType);
 
+        // Mock Training
         Training training = new Training();
         training.setTrainee(trainee);
         training.setTrainer(trainer);
         training.setTrainingType(type);
+        training.setTrainingName("Algebra Basics");
+        training.setTrainingDate(new Date());
+        training.setTrainingDuration(120);
 
+        // Mock DAO behavior
         when(traineeDao.findByUsername(traineeUsername)).thenReturn(Optional.of(trainee));
-        when(trainingDao.findByDate(traineeUsername, fromDate, toDate)).thenReturn(List.of(training));
+        when(trainingDao.findByTraineeDate(traineeUsername, fromDate, toDate)).thenReturn(List.of(training));
 
-        List<Training> result = trainingService.getTraineeTrainingsByCriteria(traineeUsername, fromDate, toDate, trainerName, trainingType);
+        // Call the method
+        List<TraineeTrainingResponse> result = trainingService.getTraineeTrainingsByCriteria(traineeUsername, fromDate, toDate, trainerName, trainingType);
 
+        // Assertions
         assertEquals(1, result.size());
-        assertEquals(trainerName, result.get(0).getTrainer().getUsername());
-        assertEquals(trainingType, result.get(0).getTrainingType().getTrainingTypeName());
+        TraineeTrainingResponse response = result.get(0);
+        assertEquals("Algebra Basics", response.getTrainingName());
+        assertEquals(trainingType, response.getTrainingType());
+        assertEquals(trainerName, response.getTrainerName());
+        assertEquals(120, response.getTrainingDuration());
     }
 
     @Test
@@ -83,7 +93,11 @@ class TrainingServiceTest {
         String traineeUsername = "john.doe";
         String trainerUsername = "alice.smith";
         String trainingTypeName = "Math";
+        String trainingName = "Advanced Math";
+        Date trainingDate = new Date();
+        Integer trainingDuration = 90;
 
+        // Mocked entities
         Trainee trainee = new Trainee();
         trainee.setUsername(traineeUsername);
 
@@ -93,18 +107,26 @@ class TrainingServiceTest {
         TrainingType type = new TrainingType();
         type.setTrainingTypeName(trainingTypeName);
 
-        Training training = new Training();
-
+        // Mock DAO behavior
         when(traineeDao.findByUsername(traineeUsername)).thenReturn(Optional.of(trainee));
         when(trainerDao.findByUsername(trainerUsername)).thenReturn(Optional.of(trainer));
         when(trainingTypeDao.findByName(trainingTypeName)).thenReturn(Optional.of(type));
 
-        trainingService.addTraining(traineeUsername, trainerUsername, trainingTypeName, training);
+        // Call the service method
+        trainingService.addTraining(traineeUsername, trainerUsername, trainingName, trainingDate, trainingDuration, trainingTypeName);
 
-        verify(trainingDao).save(training);
-        assertEquals(trainee, training.getTrainee());
-        assertEquals(trainer, training.getTrainer());
-        assertEquals(type, training.getTrainingType());
+        // Capture the Training object passed to save
+        ArgumentCaptor<Training> captor = ArgumentCaptor.forClass(Training.class);
+        verify(trainingDao).save(captor.capture());
+        Training savedTraining = captor.getValue();
+
+        // Assertions
+        assertEquals(trainee, savedTraining.getTrainee());
+        assertEquals(trainer, savedTraining.getTrainer());
+        assertEquals(type, savedTraining.getTrainingType());
+        assertEquals(trainingName, savedTraining.getTrainingName());
+        assertEquals(trainingDate, savedTraining.getTrainingDate());
+        assertEquals(trainingDuration, savedTraining.getTrainingDuration());
     }
 
     @Test
@@ -139,31 +161,50 @@ class TrainingServiceTest {
         String traineeUsername = "john.doe";
         List<String> trainerUsernames = List.of("alice.smith", "bob.jones");
 
+        // Create mock Trainee
         Trainee trainee = new Trainee();
         trainee.setUsername(traineeUsername);
 
+        // Create mock TrainingType
+        TrainingType fitness = new TrainingType();
+        fitness.setId(1L);
+        fitness.setTrainingTypeName("Fitness");
+
+        // Create mock Trainers
         Trainer trainer1 = new Trainer();
         trainer1.setUsername("alice.smith");
+        trainer1.setSpecialization(fitness); // Set specialization
 
         Trainer trainer2 = new Trainer();
         trainer2.setUsername("bob.jones");
+        trainer2.setSpecialization(fitness); // Set specialization
 
+        // Create existing training
         Training existingTraining = new Training();
         existingTraining.setTrainee(trainee);
 
+        // Mock DAO calls
         when(traineeDao.findByUsername(traineeUsername)).thenReturn(Optional.of(trainee));
         when(trainerDao.findAll()).thenReturn(List.of(trainer1, trainer2));
         when(trainingDao.findByTraineeUsername(traineeUsername)).thenReturn(List.of(existingTraining));
 
-        trainingService.updateTraineeTrainers(traineeUsername, trainerUsernames);
+        // Call the method
+        List<TrainerDetails> result = trainingService.updateTraineeTrainers(traineeUsername, trainerUsernames);
 
+        // Verify DAO interactions
         verify(trainingDao).deleteAll(List.of(existingTraining));
         ArgumentCaptor<List<Training>> captor = ArgumentCaptor.forClass(List.class);
         verify(trainingDao).saveAll(captor.capture());
 
+        // Assert new trainings were saved
         List<Training> savedTrainings = captor.getValue();
         assertEquals(2, savedTrainings.size());
         assertEquals(trainer1, savedTrainings.get(0).getTrainer());
         assertEquals(trainer2, savedTrainings.get(1).getTrainer());
+
+        // Assert response
+        assertEquals(2, result.size());
+        assertEquals("alice.smith", result.get(0).getUsername());
+        assertEquals("bob.jones", result.get(1).getUsername());
     }
 }

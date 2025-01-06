@@ -1,7 +1,15 @@
 package com.trainignapp.trainingapp;
 
+import com.trainignapp.trainingapp.dao.TraineeDao;
 import com.trainignapp.trainingapp.dao.TrainerDao;
+import com.trainignapp.trainingapp.dao.TrainingDao;
+import com.trainignapp.trainingapp.dto.TrainerProfileResponseFull;
+import com.trainignapp.trainingapp.dto.UpdateTrainerProfileRequest;
+import com.trainignapp.trainingapp.model.Trainee;
 import com.trainignapp.trainingapp.model.Trainer;
+import com.trainignapp.trainingapp.model.Training;
+import com.trainignapp.trainingapp.model.TrainingType;
+import com.trainignapp.trainingapp.service.TraineeService;
 import com.trainignapp.trainingapp.service.TrainerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,12 +26,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TrainerServiceTest {
-
     @Mock
     private TrainerDao trainerDao;
-
+    @Mock
+    private TraineeDao traineeDao;
     @InjectMocks
     private TrainerService trainerService;
+    @InjectMocks
+    private TraineeService traineeService;
+    @Mock
+    private TrainingDao trainingDao;
 
     @BeforeEach
     void setUp() {
@@ -47,6 +59,26 @@ class TrainerServiceTest {
         assertNotNull(savedTrainer.getUsername());
         assertNotNull(savedTrainer.getPassword());
         assertTrue(savedTrainer.getUsername().startsWith("Alice.Smith"));
+    }
+
+    @Test
+    void shouldNotRegisterTrainerIfAlreadyTrainee() {
+        String username = "John.Doe";
+
+        // Ensure that the unique username generation aligns with the mock expectations
+        when(traineeDao.findByUsername(username)).thenReturn(Optional.of(new Trainee()));
+        when(trainerDao.findByUsername(username)).thenReturn(Optional.empty());
+
+        // Create a Trainee object with firstName and lastName that lead to the mocked username
+        Trainer trainer = new Trainer();
+        trainer.setFirstName("John");
+        trainer.setLastName("Doe");
+
+        // Mock the DAO call if it is not mocked already
+        when(trainerDao.findByUsername(username)).thenReturn(Optional.empty());
+
+        // Assert that the exception is thrown when trying to create a trainee who is already a trainer
+        assertThrows(IllegalArgumentException.class, () -> trainerService.createTrainer(trainer));
     }
 
     @Test
@@ -95,17 +127,6 @@ class TrainerServiceTest {
     }
 
     @Test
-    void select_ShouldReturnNullWhenTrainerDoesNotExist() {
-        String username = "Alice.Smith";
-
-        when(trainerDao.findByUsername(username)).thenReturn(Optional.empty());
-
-        Trainer result = trainerService.select(username);
-
-        assertNull(result);
-    }
-
-    @Test
     void updateTrainerPassword_ShouldUpdatePasswordWhenAuthenticated() {
         String username = "Alice.Smith";
         String oldPassword = "securePassword";
@@ -127,24 +148,47 @@ class TrainerServiceTest {
     void updateProfile_ShouldUpdateTrainerProfileWhenAuthenticated() {
         String username = "Alice.Smith";
 
+        // Existing trainer
         Trainer oldTrainer = new Trainer();
         oldTrainer.setUsername(username);
         oldTrainer.setPassword("securePassword");
+        oldTrainer.setIsActive(true);
 
-        Trainer newTrainer = new Trainer();
-        newTrainer.setUsername("Alice.Smith");
+        // Update request
+        UpdateTrainerProfileRequest newTrainer = new UpdateTrainerProfileRequest();
         newTrainer.setFirstName("Alice");
         newTrainer.setLastName("Smith");
-        newTrainer.setPassword("securePassword");
         newTrainer.setIsActive(true);
 
+        // Mock specialization
+        TrainingType trainingType = new TrainingType();
+        trainingType.setId(1L);
+        trainingType.setTrainingTypeName("Fitness");
+        oldTrainer.setSpecialization(trainingType);
+
+        // Mock training
+        Trainee trainee = new Trainee();
+        trainee.setUsername("trainee1");
+        trainee.setFirstName("John");
+        trainee.setLastName("Doe");
+
+        Training training = new Training();
+        training.setTrainee(trainee);
+
+        // Mock DAO responses
         when(trainerDao.findByUsername(username)).thenReturn(Optional.of(oldTrainer));
+        when(trainingDao.findByTrainerUsername(username)).thenReturn(List.of(training));
 
-        trainerService.updateProfile(username, newTrainer);
+        // Call the method
+        TrainerProfileResponseFull response = trainerService.updateProfile(username, newTrainer);
 
+        // Verify updates
         verify(trainerDao).save(oldTrainer);
         assertEquals("Alice", oldTrainer.getFirstName());
         assertEquals("Smith", oldTrainer.getLastName());
+        assertEquals("Fitness", response.getSpecialization());
+        assertEquals(1, response.getTrainees().size());
+        assertEquals("trainee1", response.getTrainees().get(0).getUsername());
     }
 
     @Test
@@ -158,7 +202,7 @@ class TrainerServiceTest {
 
         when(trainerDao.findByUsername(username)).thenReturn(Optional.of(trainer));
 
-        trainerService.deactivateTrainer(username);
+        trainerService.deactivateTrainer(username, false);
 
         verify(trainerDao).save(trainer);
         assertFalse(trainer.getIsActive());

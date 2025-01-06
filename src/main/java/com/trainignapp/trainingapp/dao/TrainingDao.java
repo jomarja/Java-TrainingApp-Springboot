@@ -11,15 +11,19 @@ import java.util.Optional;
 
 @Component
 public class TrainingDao {
-    private TrainingRepository repository;
+    private final TrainingRepository repository;
 
     @Autowired
     public TrainingDao(TrainingRepository repository) {
         this.repository = repository;
     }
 
-    public List<Training> findByDate(String username, Date fromDate, Date toDate) {
-        return repository.findByTrainee_UsernameAndTrainingDateBetween(username, fromDate, toDate);
+    public List<Training> findByTraineeDate(String username, Date fromDate, Date toDate) {
+        return repository.findByTraineeUsernameAndDateRange(username, fromDate, toDate);
+    }
+
+    public List<Training> findByTrainerDate(String username, Date fromDate, Date toDate) {
+        return repository.findByTrainerUsernameAndDateRange(username, fromDate, toDate);
     }
 
     public List<Training> findByUsernames(String trainerUsername, String traineeUsername) {
@@ -40,6 +44,10 @@ public class TrainingDao {
 
     public List<Training> findByTraineeUsername(String username) {
         return repository.findByTrainee_Username(username);
+    }
+
+    public List<Training> findByTrainerUsername(String username) {
+        return repository.findByTrainer_Username(username);
     }
 
     public Optional<Training> select(String trainingName) {
