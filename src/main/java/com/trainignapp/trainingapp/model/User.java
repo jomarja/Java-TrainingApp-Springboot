@@ -23,5 +23,5 @@ public abstract class User {
     private String password;
 
     @Column(nullable = false)
-    private Boolean isActive;
+    private Boolean isActive = true;
 }
