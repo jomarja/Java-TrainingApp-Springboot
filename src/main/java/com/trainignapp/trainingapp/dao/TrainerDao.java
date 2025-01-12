@@ -11,7 +11,7 @@ import java.util.Optional;
 @Component
 public class TrainerDao {
     private final TrainerRepository repository;
-
+  
     @Autowired
     public TrainerDao(TrainerRepository repository) {
         this.repository = repository;
