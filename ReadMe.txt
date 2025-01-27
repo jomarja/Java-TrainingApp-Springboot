@@ -5,4 +5,3 @@ Then the Implemented controllers will work properly on localhost::8081 (I assign
 HOW TO TEST:
 Simply right click src/test/java folder and choose Run 'Tests in 'Java"
 after the core java logic testing there is an additional way to test it using the postman and the endpoint that are available in controller classes; simply run postman and enter the endpoint with localhost::8081 at the beginning.
-
