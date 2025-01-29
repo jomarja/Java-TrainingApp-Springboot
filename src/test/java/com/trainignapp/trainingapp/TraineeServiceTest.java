@@ -2,9 +2,12 @@ package com.trainignapp.trainingapp;
 
 import com.trainignapp.trainingapp.dao.TraineeDao;
 import com.trainignapp.trainingapp.dao.TrainerDao;
+import com.trainignapp.trainingapp.dao.TrainingDao;
 import com.trainignapp.trainingapp.model.Trainee;
 import com.trainignapp.trainingapp.model.Trainer;
 import com.trainignapp.trainingapp.service.TraineeService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -26,10 +29,22 @@ class TraineeServiceTest {
     private TrainerDao trainerDao;
     @InjectMocks
     private TraineeService traineeService;
+    @Mock
+    private MeterRegistry meterRegistry;
+    @Mock
+    private Counter mockCounter;
+    @Mock
+    private TrainingDao trainingDao;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        // Mock the MeterRegistry to return the mock Counter
+        when(meterRegistry.counter("trainee.created.count")).thenReturn(mockCounter);
+
+        // Manually initialize TraineeService with mocked dependencies
+        traineeService = new TraineeService(traineeDao, trainerDao, trainingDao, meterRegistry);
     }
 
     @Test
@@ -49,6 +64,8 @@ class TraineeServiceTest {
         assertNotNull(savedTrainee.getUsername());
         assertNotNull(savedTrainee.getPassword());
         assertTrue(savedTrainee.getUsername().startsWith("John.Doe"));
+
+        verify(mockCounter).increment();
     }
 
     @Test

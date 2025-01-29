@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: trainingapp
+  profiles:
+    active: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/trainingapp
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  doc:
+    api-docs:
+      enabled: true
+    swagger-ui:
+      enabled: true
+
+server:
+  port: 8081
+
+management:
+  security:
+    enabled: false
+  endpoint:
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+    shutdown:
+      enabled: true
+    info:
+      env:
+        enabled: true
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: prometheus, metrics, info, health, shutdown, beans

@@ -10,6 +10,8 @@ import com.trainignapp.trainingapp.dto.UpdateTraineeProfileRequest;
 import com.trainignapp.trainingapp.model.Trainee;
 import com.trainignapp.trainingapp.model.Trainer;
 import com.trainignapp.trainingapp.model.Training;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -30,12 +32,14 @@ public class TraineeService {
     private final TrainingDao trainingDao;
     Random random;
     String transactionId = UUID.randomUUID().toString();
+    private final Counter createdTraineesCounter;
 
     @Autowired
-    public TraineeService(TraineeDao traineeDao, TrainerDao trainerDao, TrainingDao trainingDao) {
+    public TraineeService(TraineeDao traineeDao, TrainerDao trainerDao, TrainingDao trainingDao, MeterRegistry meterRegistry) {
         this.traineeDao = traineeDao;
         this.trainerDao = trainerDao;
         this.trainingDao = trainingDao;
+        this.createdTraineesCounter = meterRegistry.counter("trainee.created.count");
     }
 
     public void createTrainee(Trainee trainee) {
@@ -52,6 +56,7 @@ public class TraineeService {
         }
         traineeDao.save(trainee);
         logger.info("[Transaction ID: {}] Created Trainee: {}", transactionId, trainee);
+        createdTraineesCounter.increment();
     }
 
     public boolean authenticateTrainee(String username, String password) {
