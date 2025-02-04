@@ -55,8 +55,7 @@ public class WebSecurityConfig {
                 .cors(Customizer.withDefaults())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/perform_login", "/css/**").permitAll()
-                        .requestMatchers("/api/auth/login", "/api/trainers/register", "/api/trainees/register").permitAll()
+                        .requestMatchers("/login", "/perform_login", "/css/**").permitAll().requestMatchers("/api/auth/login", "/api/trainers/register").permitAll().requestMatchers("/api/trainees/*/profile").permitAll()
                         .anyRequest().authenticated()).exceptionHandling(e -> e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                         new org.springframework.security.web.util.matcher.AntPathRequestMatcher("/api/**"))).formLogin(form -> form.loginPage("/login").loginProcessingUrl("/perform_login").defaultSuccessUrl("/home", true).failureUrl("/login?error=true").permitAll()).logout(logout -> logout.logoutUrl("/perform_logout").logoutSuccessUrl("/login?logout").invalidateHttpSession(true).clearAuthentication(true).deleteCookies("JSESSIONID").permitAll());
 
