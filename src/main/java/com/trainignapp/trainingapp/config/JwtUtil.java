@@ -13,7 +13,7 @@ import java.util.Date;
 @Component
 public class JwtUtil {
     private final SecretKey SECRET_KEY;
-    private final long EXPIRATION_TIME = 1000 * 60 * 60; // 1 hour
+    private static final long EXPIRATION_TIME = 1000L * 60 * 60;
 
     public JwtUtil(@Value("${jwt.secret}") String secret) {
         if (secret.length() < 32) {
@@ -24,8 +24,7 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
-        return Jwts.builder().setSubject(username).setIssuedAt(new Date()).setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)).signWith(SECRET_KEY) // ✅ Secure key
-                .compact();
+        return Jwts.builder().setSubject(username).setIssuedAt(new Date()).setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)).signWith(SECRET_KEY).compact();
     }
 
     public String extractUsername(String token) {
@@ -37,8 +36,7 @@ public class JwtUtil {
     }
 
     private Claims getClaims(String token) {
-        return Jwts.parserBuilder().setSigningKey(SECRET_KEY) // Secure key
-                .build().parseClaimsJws(token).getBody();
+        return Jwts.parserBuilder().setSigningKey(SECRET_KEY).build().parseClaimsJws(token).getBody();
     }
 
     private boolean isTokenExpired(String token) {

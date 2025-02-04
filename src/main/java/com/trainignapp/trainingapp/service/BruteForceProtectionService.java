@@ -18,7 +18,11 @@ public class BruteForceProtectionService {
                 return new FailedLoginAttempt(1, null);
             }
             int newCount = attempt.failedAttempts + 1;
-            LocalDateTime blockTime = (newCount >= MAX_FAILED_ATTEMPTS) ? LocalDateTime.now().plusMinutes(BLOCK_TIME_MINUTES) : null;
+            LocalDateTime blockTime = null;
+
+            if (newCount >= MAX_FAILED_ATTEMPTS) {
+                blockTime = LocalDateTime.now().plusMinutes(BLOCK_TIME_MINUTES);
+            }
             return new FailedLoginAttempt(newCount, blockTime);
         });
     }

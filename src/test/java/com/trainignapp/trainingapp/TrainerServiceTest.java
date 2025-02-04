@@ -19,6 +19,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@AutoConfigureMockMvc(addFilters = false)
 class TrainerServiceTest {
     @Mock
     private TrainerDao trainerDao;
@@ -42,6 +47,8 @@ class TrainerServiceTest {
     private Counter mockCounter;
     @Mock
     private TrainingDao trainingDao;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
@@ -49,8 +56,10 @@ class TrainerServiceTest {
         // Mock MeterRegistry to return the mocked Counter
         when(meterRegistry.counter("trainer.created.count")).thenReturn(mockCounter);
 
-        // Manually initialize TrainerService with mocked dependencies
+        passwordEncoder = new BCryptPasswordEncoder();
+
         trainerService = new TrainerService(trainerDao, traineeDao, trainingDao, meterRegistry);
+        ReflectionTestUtils.setField(trainerService, "passwordEncoder", passwordEncoder);
     }
 
     @Test
@@ -101,7 +110,7 @@ class TrainerServiceTest {
 
         Trainer trainer = new Trainer();
         trainer.setUsername(username);
-        trainer.setPassword(password);
+        trainer.setPassword(passwordEncoder.encode(password));
 
         when(trainerDao.findByUsername(username)).thenReturn(Optional.of(trainer));
 
@@ -117,11 +126,9 @@ class TrainerServiceTest {
 
         when(trainerDao.findByUsername(username)).thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            trainerService.authenticateTrainer(username, password);
-        });
+        boolean isAuthenticated = trainerService.authenticateTrainer(username, password);
 
-        assertEquals("Wrong username", exception.getMessage());
+        assertFalse(isAuthenticated);
     }
 
     @Test

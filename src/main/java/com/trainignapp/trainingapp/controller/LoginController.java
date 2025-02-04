@@ -10,18 +10,18 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class LoginController {
     @GetMapping("/login")
     public String showLoginPage() {
-        return "login"; // Load the Thymeleaf login page
+        return "login";
     }
 
     @GetMapping("/home")
     public String showHomePage(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        model.addAttribute("username", auth.getName()); // Pass username to Thymeleaf
-        return "home"; // Load the Thymeleaf home page
+        model.addAttribute("username", auth.getName());
+        return "home";
     }
 
     @GetMapping("/logout")
     public String showLogoutPage() {
-        return "logout"; // Returns the logout page
+        return "logout";
     }
 }

@@ -1,6 +1,7 @@
 package com.trainignapp.trainingapp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trainignapp.trainingapp.config.JwtUtil;
 import com.trainignapp.trainingapp.controller.TrainingController;
 import com.trainignapp.trainingapp.dao.TrainingTypeDao;
 import com.trainignapp.trainingapp.dto.AddTrainingRequest;
@@ -13,6 +14,7 @@ import com.trainignapp.trainingapp.service.TrainingTypeService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TrainingController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class TrainingControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -39,6 +42,8 @@ class TrainingControllerTest {
     private TrainingTypeDao trainingTypeDao;
     @Autowired
     private ObjectMapper objectMapper;
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     @Test
     void getUnassignedActiveTrainers_ShouldReturnTrainers_WhenValidTraineeUsername() throws Exception {
