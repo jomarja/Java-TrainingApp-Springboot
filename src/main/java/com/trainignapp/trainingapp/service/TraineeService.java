@@ -17,6 +17,7 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -30,6 +31,8 @@ public class TraineeService {
     private final TraineeDao traineeDao;
     private final TrainerDao trainerDao;
     private final TrainingDao trainingDao;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     Random random;
     String transactionId = UUID.randomUUID().toString();
     private final Counter createdTraineesCounter;
@@ -46,9 +49,9 @@ public class TraineeService {
         logger.info("[Transaction ID: {}] Starting Creating process for Trainee: {}", transactionId, trainee);
         String username = generateUniqueUsername(trainee.getFirstName(), trainee.getLastName());
         String password = generateRandomPassword();
-
+        logger.info("[password ID: {}] Starting Creating process for Trainee: {}", password, password);
         trainee.setUsername(username);
-        trainee.setPassword(password);
+        trainee.setPassword(passwordEncoder.encode(password));
 
         if (trainerDao.findByUsername(trainee.getUsername()).isPresent()) {
             logger.info("[Transaction ID: {}] Starting startChecking if trainee already exists: {}", transactionId, trainee);
@@ -60,7 +63,7 @@ public class TraineeService {
     }
 
     public boolean authenticateTrainee(String username, String password) {
-        return traineeDao.findByUsername(username).map(trainee -> trainee.getPassword().equals(password)).orElse(false);
+        return traineeDao.findByUsername(username).map(trainee -> passwordEncoder.matches(password, trainee.getPassword())).orElse(false);
     }
 
     public Trainee select(String username) {
@@ -69,22 +72,14 @@ public class TraineeService {
 
     public void updateTraineePassword(String username, String newPassword) {
         Trainee trainer = select(username);
-        if (authenticateTrainee(username, trainer.getPassword())) {
-            trainer.setPassword(newPassword);
-            traineeDao.save(trainer);
-        } else {
-            throw new IllegalArgumentException("Authenticate First Please: {}");
-        }
+
+        trainer.setPassword(newPassword);
+        traineeDao.save(trainer);
     }
 
     public TraineeUpdatedProfileResponse updateProfile(String username, UpdateTraineeProfileRequest request) {
         logger.info("[Transaction ID: {}]  Updating profile for Trainee: {}", transactionId, username);
         Trainee trainee = traineeDao.findByUsername(username).orElseThrow(() -> new EntityNotFoundException("Trainee not found"));
-
-        if (!authenticateTrainee(username, trainee.getPassword())) {
-            logger.info("[Transaction ID: {}] Authenticating Trainee: {}", transactionId, trainee);
-            throw new IllegalArgumentException("Authenticate First Please: {}");
-        }
 
         trainee.setUsername(generateUniqueUsername(request.getFirstName(), request.getLastName()));
         trainee.setFirstName(request.getFirstName());
@@ -108,19 +103,16 @@ public class TraineeService {
         logger.info("[Transaction ID: {}] Starting deactivation process for Trainee: {}", transactionId, username);
         Trainee trainer = select(username);
         logger.info("[Transaction ID: {}] Fetched Trainee: {}", transactionId, trainer);
-        if (!authenticateTrainee(username, trainer.getPassword())) {
-            throw new IllegalArgumentException("Authenticate First Please");
-        } else {
-            logger.info("[Transaction ID: {}] Authentication successful for Trainee: {}", transactionId, username);
-            if (Boolean.TRUE.equals(trainer.getIsActive()) != isActive) {
-                trainer.setIsActive(!trainer.getIsActive());
 
-                traineeDao.save(trainer);
-                logger.info("Trainee active status changed: {}", trainer.getIsActive());
-            } else {
-                logger.warn("[Transaction ID: {}] No status change needed. Current status is already: {}", transactionId, isActive);
-                throw new IllegalArgumentException("The status is already" + isActive + ": {}");
-            }
+        logger.info("[Transaction ID: {}] Authentication successful for Trainee: {}", transactionId, username);
+        if (Boolean.TRUE.equals(trainer.getIsActive()) != isActive) {
+            trainer.setIsActive(!trainer.getIsActive());
+
+            traineeDao.save(trainer);
+            logger.info("Trainee active status changed: {}", trainer.getIsActive());
+        } else {
+            logger.warn("[Transaction ID: {}] No status change needed. Current status is already: {}", transactionId, isActive);
+            throw new IllegalArgumentException("The status is already" + isActive + ": {}");
         }
     }
 
@@ -128,15 +120,11 @@ public class TraineeService {
     public void deleteTrainee(String username) {
         logger.info("[Transaction ID: {}] deleting Trainee: {}", transactionId, username);
         Trainee trainee = select(username);
-        if (authenticateTrainee(username, trainee.getPassword())) {
-            logger.info("[Transaction ID: {}] Authenticated Trainee: {}", transactionId, username);
-            // Delete all trainings associated with this trainee
-            traineeDao.delete(trainee);
-            logger.info("[Transaction ID: {}] deleted Trainee: {}", transactionId, username);
-        } else {
-            logger.error("[Transaction ID: {}] Authentication failed for Trainee: {}", transactionId, username);
-            throw new IllegalArgumentException("Authenticate please: {}");
-        }
+
+        logger.info("[Transaction ID: {}] Authenticated Trainee: {}", transactionId, username);
+        // Delete all trainings associated with this trainee
+        traineeDao.delete(trainee);
+        logger.info("[Transaction ID: {}] deleted Trainee: {}", transactionId, username);
     }
 
     public String generateUniqueUsername(String firstName, String lastName) {
@@ -181,10 +169,6 @@ public class TraineeService {
 
         // Fetch trainee using the username
         Trainee trainee = traineeDao.findByUsername(username).orElseThrow(() -> new EntityNotFoundException("Trainee not found with username: " + username));
-
-        if (!authenticateTrainee(username, trainee.getPassword())) {
-            throw new IllegalArgumentException("Authenticate First Please");
-        }
 
         // Fetch all trainings associated with this trainee
         List<Training> trainings = trainingDao.findByTraineeUsername(trainee.getUsername());

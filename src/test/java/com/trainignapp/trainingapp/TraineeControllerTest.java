@@ -1,6 +1,7 @@
 package com.trainignapp.trainingapp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trainignapp.trainingapp.config.JwtUtil;
 import com.trainignapp.trainingapp.controller.TraineeController;
 import com.trainignapp.trainingapp.dto.*;
 import com.trainignapp.trainingapp.service.TraineeService;
@@ -9,6 +10,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -22,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TraineeController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class TraineeControllerTest {
     @MockitoBean
     public TraineeService traineeService;
@@ -31,6 +34,8 @@ class TraineeControllerTest {
     private ObjectMapper objectMapper;
     @Autowired
     private MockMvc mockMvc;
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     @Test
     void registerTrainee_ShouldReturnCreatedStatus() throws Exception {

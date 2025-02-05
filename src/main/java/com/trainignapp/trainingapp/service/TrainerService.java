@@ -15,6 +15,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,6 +28,8 @@ public class TrainerService {
     private final TrainerDao trainerDao;
     private final TraineeDao traineeDao;
     private final TrainingDao trainingDao;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     Random random = new Random();
     String transactionId = UUID.randomUUID().toString();
     private final Counter createdTrainersCounter;
@@ -43,9 +46,10 @@ public class TrainerService {
         logger.info("[Transaction ID: {}] Starting Creating process for Trainee: {}", transactionId, trainer);
         String username = generateUniqueUsername(trainer.getFirstName(), trainer.getLastName());
         String password = generateRandomPassword();
+        logger.info("[password ID: {}] Starting Creating process for Trainee: {}", password, password);
 
         trainer.setUsername(username);
-        trainer.setPassword(password);
+        trainer.setPassword(passwordEncoder.encode(password));
 
         logger.info("[Transaction ID: {}] Checking if User already exists: {}", transactionId, trainer);
         if (traineeDao.findByUsername(trainer.getUsername()).isPresent()) {
@@ -59,7 +63,7 @@ public class TrainerService {
     }
 
     public boolean authenticateTrainer(String username, String password) {
-        return trainerDao.findByUsername(username).map(trainer -> trainer.getPassword().equals(password)).orElseThrow(() -> new IllegalArgumentException("Wrong username"));
+        return trainerDao.findByUsername(username).map(trainer -> passwordEncoder.matches(password, trainer.getPassword())).orElse(false);
     }
 
     public Trainer select(String username) {
@@ -68,24 +72,15 @@ public class TrainerService {
 
     public void updateTrainerPassword(String username, String newPassword) {
         Trainer trainer = select(username);
-        if (authenticateTrainer(username, trainer.getPassword())) {
-            trainer.setPassword(newPassword);
-            trainerDao.save(trainer);
-        } else {
-            throw new IllegalArgumentException("Authenticate First Please: {}");
-        }
+
+        trainer.setPassword(newPassword);
+        trainerDao.save(trainer);
     }
 
     public TrainerProfileResponseFull updateProfile(String username, UpdateTrainerProfileRequest newTrainer) {
         logger.info("[Transaction ID: {}] Updating profile for Trainer: {}", transactionId, username);
         // Fetch the existing trainer
         Trainer oldTrainer = select(username);
-
-        // Ensure authentication
-        if (!authenticateTrainer(username, oldTrainer.getPassword())) {
-            logger.info("[Transaction ID: {}] Authentication Failed for Trainer: {}", transactionId, username);
-            throw new IllegalArgumentException("Authenticate First Please: {}");
-        }
 
         logger.info("[Transaction ID: {}] Authenticated Successfully for Trainer: {}", transactionId, username);
 
@@ -111,19 +106,13 @@ public class TrainerService {
     public void deactivateTrainer(String username, boolean isActive) {
         logger.info("[Transaction ID: {}] Deactivating Trainer: {}", transactionId, username);
         Trainer trainer = select(username);
-
-        // Ensure the trainer is authenticated
-        if (!authenticateTrainer(username, trainer.getPassword())) {
-            throw new IllegalArgumentException("Authenticate First Please");
+        logger.info("[Transaction ID: {}] Authenticated successfully for Trainer: {}", transactionId, username);
+        if (Boolean.TRUE.equals(trainer.getIsActive()) != isActive) {
+            trainer.setIsActive(isActive); // Update the active status
+            trainerDao.save(trainer);
+            logger.info("[Transaction ID: {}] Trainer Active status changed Successfully: {}", transactionId, username);
         } else {
-            logger.info("[Transaction ID: {}] Authenticated successfully for Trainer: {}", transactionId, username);
-            if (Boolean.TRUE.equals(trainer.getIsActive()) != isActive) {
-                trainer.setIsActive(isActive); // Update the active status
-                trainerDao.save(trainer);
-                logger.info("[Transaction ID: {}] Trainer Active status changed Successfully: {}", transactionId, username);
-            } else {
-                throw new IllegalArgumentException("The status is already" + isActive + ": {}");
-            }
+            throw new IllegalArgumentException("The status is already" + isActive + ": {}");
         }
     }
 
@@ -142,10 +131,6 @@ public class TrainerService {
     public TrainerProfileResponse getTrainerProfile(String username) {
         logger.info("[Transaction ID: {}] getting profile for Trainer: {}", transactionId, username);
         Trainer trainer = trainerDao.findByUsername(username).orElseThrow(() -> new EntityNotFoundException("Trainer not found: " + username));
-
-        if (!authenticateTrainer(username, trainer.getPassword())) {
-            throw new IllegalArgumentException("Authenticate First Please");
-        }
 
         List<TrainerTraineeResponse> trainees = trainingDao.findByTrainerUsername(username).stream().map(training -> new TrainerTraineeResponse(training.getTrainee().getUsername(), training.getTrainee().getFirstName(), training.getTrainee().getLastName())).distinct().toList();
         logger.info("[Transaction ID: {}] Successfully got profile for Trainer: {}", transactionId, username);

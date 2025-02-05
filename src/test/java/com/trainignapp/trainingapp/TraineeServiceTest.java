@@ -14,6 +14,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@AutoConfigureMockMvc(addFilters = false)
 class TraineeServiceTest {
     @Mock
     private TraineeDao traineeDao;
@@ -35,6 +41,8 @@ class TraineeServiceTest {
     private Counter mockCounter;
     @Mock
     private TrainingDao trainingDao;
+    @MockitoBean
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
@@ -42,9 +50,11 @@ class TraineeServiceTest {
 
         // Mock the MeterRegistry to return the mock Counter
         when(meterRegistry.counter("trainee.created.count")).thenReturn(mockCounter);
+        passwordEncoder = new BCryptPasswordEncoder();
 
         // Manually initialize TraineeService with mocked dependencies
         traineeService = new TraineeService(traineeDao, trainerDao, trainingDao, meterRegistry);
+        ReflectionTestUtils.setField(traineeService, "passwordEncoder", passwordEncoder);
     }
 
     @Test
@@ -75,7 +85,7 @@ class TraineeServiceTest {
 
         Trainee trainee = new Trainee();
         trainee.setUsername(username);
-        trainee.setPassword(password);
+        trainee.setPassword(passwordEncoder.encode(password));
 
         when(traineeDao.findByUsername(username)).thenReturn(Optional.of(trainee));
 

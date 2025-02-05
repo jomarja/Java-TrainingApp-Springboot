@@ -50,3 +50,5 @@ management:
     web:
       exposure:
         include: prometheus, metrics, info, health, shutdown, beans
+jwt:
+  secret: "SOVhpdiDzs659O9ZiK2k+QTlt/Qf4fkHpQRdnn5/0FI="
