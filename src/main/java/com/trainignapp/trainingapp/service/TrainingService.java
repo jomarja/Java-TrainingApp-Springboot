@@ -4,9 +4,7 @@ import com.trainignapp.trainingapp.dao.TraineeDao;
 import com.trainignapp.trainingapp.dao.TrainerDao;
 import com.trainignapp.trainingapp.dao.TrainingDao;
 import com.trainignapp.trainingapp.dao.TrainingTypeDao;
-import com.trainignapp.trainingapp.dto.TraineeTrainingResponse;
-import com.trainignapp.trainingapp.dto.TrainerDetails;
-import com.trainignapp.trainingapp.dto.TrainerTrainingResponse;
+import com.trainignapp.trainingapp.dto.*;
 import com.trainignapp.trainingapp.model.Trainee;
 import com.trainignapp.trainingapp.model.Trainer;
 import com.trainignapp.trainingapp.model.Training;
@@ -29,14 +27,16 @@ public class TrainingService {
     private final TrainerDao trainerDao;
     private final TraineeDao traineeDao;
     private final TrainingTypeDao trainingTypeDao;
+    private final RemoteTrainingServiceClient remoteTrainingServiceClient;
     String transactionId = UUID.randomUUID().toString();
 
     @Autowired
-    public TrainingService(TrainingDao trainingDao, TrainerDao trainerDao, TraineeDao traineeDao, TrainingTypeDao trainingTypeDao) {
+    public TrainingService(TrainingDao trainingDao, TrainerDao trainerDao, TraineeDao traineeDao, TrainingTypeDao trainingTypeDao, RemoteTrainingServiceClient remoteTrainingServiceClient) {
         this.trainingDao = trainingDao;
         this.trainerDao = trainerDao;
         this.traineeDao = traineeDao;
         this.trainingTypeDao = trainingTypeDao;
+        this.remoteTrainingServiceClient = remoteTrainingServiceClient;
     }
 
     @Transactional
@@ -94,14 +94,11 @@ public class TrainingService {
 
     @Transactional
     public void addTraining(String traineeUsername, String trainerUsername, String trainingName, Date trainingDate, Integer trainingDuration, String trainingTypeName) {
-        logger.info("[Transaction ID: {}] Adding Trainings: {}", transactionId, trainingTypeName);
+        String txnId = UUID.randomUUID().toString();
+        logger.info("[Transaction ID: {}] addTraining called with traineeUsername={}, trainerUsername={}, trainingName={}, trainingDate={}, trainingDuration={}, trainingTypeName={}", txnId, traineeUsername, trainerUsername, trainingName, trainingDate, trainingDuration, trainingTypeName);
         Trainee trainee = traineeDao.findByUsername(traineeUsername).orElseThrow(() -> new EntityNotFoundException("Trainee not found: " + traineeUsername));
-
         Trainer trainer = trainerDao.findByUsername(trainerUsername).orElseThrow(() -> new EntityNotFoundException("Trainer not found: " + trainerUsername));
-
         TrainingType trainingType = trainingTypeDao.findByName(trainingTypeName).orElseThrow(() -> new EntityNotFoundException("Training type not found: " + trainingTypeName));
-        logger.info("[Transaction ID: {}] Training and trainer and trainees are found: {}", transactionId, trainingTypeName);
-
         Training training = new Training();
         training.setTrainee(trainee);
         training.setTrainer(trainer);
@@ -109,18 +106,25 @@ public class TrainingService {
         training.setTrainingName(trainingName);
         training.setTrainingDate(trainingDate);
         training.setTrainingDuration(trainingDuration);
-
         trainingDao.save(training);
-        logger.info("[Transaction ID: {}] Training added: {}", transactionId, trainee.getUsername());
+        logger.info("[Transaction ID: {}] Training added for trainee: {}", txnId, trainee.getUsername());
+        TrainerWorkloadRequest workloadRequest = new TrainerWorkloadRequest();
+        workloadRequest.setTrainerUsername(trainer.getUsername());
+        workloadRequest.setTrainerFirstName(trainer.getFirstName());
+        workloadRequest.setTrainerLastName(trainer.getLastName());
+        workloadRequest.setActive(trainer.getIsActive());
+        workloadRequest.setTrainingDate(trainingDate);
+        workloadRequest.setTrainingDuration(trainingDuration);
+        workloadRequest.setActionType("ADD");
+        logger.info("[Transaction ID: {}] Workload request built: {}", txnId, workloadRequest);
+        remoteTrainingServiceClient.callUpdateWorkloadWithTransaction(txnId, workloadRequest);
+        logger.info("[Transaction ID: {}] Remote workload update called", txnId);
     }
 
     public List<Trainer> getUnassignedTrainersForTrainee(String traineeUsername) {
 
-        // Fetch all active trainers
         List<Trainer> allTrainers = trainerDao.findAll();
-
         logger.info("[Transaction ID: {}] successfully got Unassigned Trainers For Trainee: {}", transactionId, traineeUsername);
-        // Filter trainers not linked to this trainee
         return allTrainers.stream().filter(trainer -> trainingDao.findByUsernames(trainer.getUsername(), traineeUsername).isEmpty()).toList();
     }
 
@@ -157,5 +161,29 @@ public class TrainingService {
 
     public Training select(String name) {
         return trainingDao.select(name).orElseThrow(() -> new RuntimeException("Training not found with name: " + name));
+    }
+
+    @Transactional
+    public void cancelTraining(CancelTrainingRequest request) {
+        String txnId = UUID.randomUUID().toString();
+        logger.info("[Transaction ID: {}] cancelTraining called with request: {}", txnId, request);
+        if (request.getTrainingDate().before(new Date())) {
+            logger.error("[Transaction ID: {}] Cannot cancel training that has occurred", txnId);
+            throw new IllegalArgumentException("Cannot cancel a training session that has already occurred.");
+        }
+        Training training = trainingDao.selectByNameAndDate(request.getTrainingName(), request.getTrainingDate(), request.getTrainingDuration(), request.getTrainingType(), request.getTrainerUsername(), request.getTraineeUsername()).orElseThrow(() -> new EntityNotFoundException("Training not found with the provided criteria"));
+        trainingDao.delete(training);
+        logger.info("[Transaction ID: {}] Training cancelled: {}", txnId, request.getTrainingName());
+        Trainer trainer = training.getTrainer();
+        TrainerWorkloadRequest workloadRequest = new TrainerWorkloadRequest();
+        workloadRequest.setTrainerUsername(trainer.getUsername());
+        workloadRequest.setTrainerFirstName(trainer.getFirstName());
+        workloadRequest.setTrainerLastName(trainer.getLastName());
+        workloadRequest.setActive(trainer.getIsActive());
+        workloadRequest.setTrainingDate(training.getTrainingDate());
+        workloadRequest.setTrainingDuration(training.getTrainingDuration());
+        workloadRequest.setActionType("DELETE");
+        remoteTrainingServiceClient.callUpdateWorkloadWithTransaction(txnId, workloadRequest);
+        logger.info("[Transaction ID: {}] Remote workload update called for cancellation", txnId);
     }
 }

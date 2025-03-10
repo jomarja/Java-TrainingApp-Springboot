@@ -2,6 +2,7 @@ package com.trainignapp.trainingapp.controller;
 
 import com.trainignapp.trainingapp.dto.*;
 import com.trainignapp.trainingapp.model.Trainer;
+import com.trainignapp.trainingapp.service.RemoteTrainingServiceClient;
 import com.trainignapp.trainingapp.service.TrainingService;
 import com.trainignapp.trainingapp.service.TrainingTypeService;
 import io.swagger.annotations.Api;
@@ -22,11 +23,13 @@ import java.util.List;
 public class TrainingController {
     private final TrainingService trainingService;
     private final TrainingTypeService trainingTypeService;
+    private final RemoteTrainingServiceClient remoteTrainingServiceClient;
 
     @Autowired
-    public TrainingController(TrainingService trainingService, TrainingTypeService trainingTypeService) {
+    public TrainingController(TrainingService trainingService, TrainingTypeService trainingTypeService, RemoteTrainingServiceClient remoteTrainingServiceClient) {
         this.trainingService = trainingService;
         this.trainingTypeService = trainingTypeService;
+        this.remoteTrainingServiceClient = remoteTrainingServiceClient;
     }
 
     @ApiOperation(value = "Get active trainers not assigned to a specific trainee", response = TrainerTraineeResponse.class, responseContainer = "List")
@@ -57,10 +60,24 @@ public class TrainingController {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
+    @ApiOperation(value = "Cancel Training By Unique Fields", response = ResponseEntity.class)
+    @PostMapping("/cancel")
+    public ResponseEntity<Void> cancelTraining(@RequestBody CancelTrainingRequest request) {
+        trainingService.cancelTraining(request);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
     @ApiOperation(value = "Get all training types", response = List.class)
     @GetMapping("/types")
     public ResponseEntity<List<TrainingTypeResponse>> getTrainingTypes() {
         List<TrainingTypeResponse> trainingTypes = trainingTypeService.getAllTrainingTypes();
         return ResponseEntity.ok(trainingTypes);
+    }
+
+    @ApiOperation(value = "Get aggregated trainer workload summary")
+    @GetMapping("/workload/aggregate/{username}")
+    public ResponseEntity<TrainerWorkloadAggregateResponse> getAggregateSummary(@PathVariable String username) {
+        TrainerWorkloadAggregateResponse response = remoteTrainingServiceClient.getAggregateSummary(username);
+        return ResponseEntity.ok(response);
     }
 }

@@ -5,6 +5,7 @@ import com.trainignapp.trainingapp.dao.TrainerDao;
 import com.trainignapp.trainingapp.model.Trainee;
 import com.trainignapp.trainingapp.model.Trainer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -30,13 +31,13 @@ public class CustomUserDetailsService implements UserDetailsService {
         Optional<Trainer> trainerOpt = trainerDao.findByUsername(username);
         if (trainerOpt.isPresent()) {
             Trainer trainer = trainerOpt.get();
-            return new User(trainer.getUsername(), trainer.getPassword(), Collections.emptyList());
+            return new User(trainer.getUsername(), trainer.getPassword(), Collections.singletonList(new SimpleGrantedAuthority("ROLE_TRAINER")));
         }
 
         Optional<Trainee> traineeOpt = traineeDao.findByUsername(username);
         if (traineeOpt.isPresent()) {
             Trainee trainee = traineeOpt.get();
-            return new User(trainee.getUsername(), trainee.getPassword(), Collections.emptyList());
+            return new User(trainee.getUsername(), trainee.getPassword(), Collections.singletonList(new SimpleGrantedAuthority("ROLE_TRAINEE")));
         }
 
         throw new UsernameNotFoundException("User not found with username: " + username);

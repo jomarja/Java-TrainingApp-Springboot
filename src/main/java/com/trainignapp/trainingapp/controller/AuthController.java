@@ -4,6 +4,7 @@ import com.trainignapp.trainingapp.config.JwtUtil;
 import com.trainignapp.trainingapp.dto.ChangePasswordRequest;
 import com.trainignapp.trainingapp.dto.LoginRequest;
 import com.trainignapp.trainingapp.service.BruteForceProtectionService;
+import com.trainignapp.trainingapp.service.CustomUserDetailsService;
 import com.trainignapp.trainingapp.service.TraineeService;
 import com.trainignapp.trainingapp.service.TrainerService;
 import io.swagger.annotations.Api;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,13 +31,15 @@ public class AuthController {
     private final TrainerService trainerService;
     private final TraineeService traineeService;
     private final BruteForceProtectionService bruteForceService;
+    private CustomUserDetailsService customUserDetailsService;
 
     @Autowired
-    public AuthController(TrainerService trainerService, TraineeService traineeService, JwtUtil jwtUtil, BruteForceProtectionService bruteForceService) {
+    public AuthController(TrainerService trainerService, TraineeService traineeService, JwtUtil jwtUtil, BruteForceProtectionService bruteForceService, CustomUserDetailsService customUserDetailsService) {
         this.trainerService = trainerService;
         this.traineeService = traineeService;
         this.jwtUtil = jwtUtil;
         this.bruteForceService = bruteForceService;
+        this.customUserDetailsService = customUserDetailsService;
     }
 
     @ApiOperation(value = "User Login", notes = "Authenticate user by username and password and generate JWT.")
@@ -59,7 +63,9 @@ public class AuthController {
 
         bruteForceService.resetFailedAttempts(username);
 
-        String token = jwtUtil.generateToken(request.getUsername());
+        // Load user details to include roles in the token
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+        String token = jwtUtil.generateToken(userDetails);
 
         logger.info("User {} logged in successfully. Token issued.", request.getUsername());
         return ResponseEntity.ok(Map.of("token", token));

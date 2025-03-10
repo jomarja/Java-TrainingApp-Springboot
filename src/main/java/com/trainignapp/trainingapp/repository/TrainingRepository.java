@@ -18,6 +18,9 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
     @Query("SELECT t FROM Training t WHERE t.trainer.username = :username AND t.trainingDate BETWEEN :fromDate AND :toDate")
     List<Training> findByTrainerUsernameAndDateRange(@Param("username") String username, @Param("fromDate") Date fromDate, @Param("toDate") Date toDate);
 
+    @Query("SELECT t FROM Training t " + "WHERE t.trainingName = :name " + "AND t.trainingDate = :date " + "AND t.trainingDuration = :duration " + "AND t.trainingType.trainingTypeName = :trainingType " + "AND t.trainer.username = :trainerUsername " + "AND t.trainee.username = :traineeUsername")
+    Optional<Training> selectByUniqueFields(@Param("name") String name, @Param("date") Date date, @Param("duration") Integer duration, @Param("trainingType") String trainingType, @Param("trainerUsername") String trainerUsername, @Param("traineeUsername") String traineeUsername);
+
     List<Training> findByTrainer_UsernameAndTrainee_Username(String trainerUsername, String traineeUsername);
 
     Optional<Training> findBytrainingName(String name);

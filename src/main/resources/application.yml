@@ -1,6 +1,6 @@
 spring:
   application:
-    name: trainingapp
+    name: main-microservice
   profiles:
     active: local
 
@@ -52,3 +52,8 @@ management:
         include: prometheus, metrics, info, health, shutdown, beans
 jwt:
   secret: "SOVhpdiDzs659O9ZiK2k+QTlt/Qf4fkHpQRdnn5/0FI="
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true

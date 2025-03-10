@@ -26,6 +26,10 @@ public class TrainingDao {
         return repository.findByTrainerUsernameAndDateRange(username, fromDate, toDate);
     }
 
+    public Optional<Training> selectByNameAndDate(String name, Date date, Integer integer, String trainingType, String trainerUsername, String traineeUsername) {
+        return repository.selectByUniqueFields(name, date, integer, trainingType, trainerUsername, traineeUsername);
+    }
+
     public List<Training> findByUsernames(String trainerUsername, String traineeUsername) {
         return repository.findByTrainer_UsernameAndTrainee_Username(trainerUsername, traineeUsername);
     }
@@ -40,6 +44,10 @@ public class TrainingDao {
 
     public void deleteAll(List<Training> training) {
         repository.deleteAll(training);
+    }
+
+    public void delete(Training training) {
+        repository.delete(training);
     }
 
     public List<Training> findByTraineeUsername(String username) {
