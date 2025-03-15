@@ -159,10 +159,6 @@ public class TrainingService {
         return trainers.stream().map(trainer -> new TrainerDetails(trainer.getUsername(), trainer.getFirstName(), trainer.getLastName(), trainer.getSpecialization().getTrainingTypeName())).toList();
     }
 
-    public Training select(String name) {
-        return trainingDao.select(name).orElseThrow(() -> new RuntimeException("Training not found with name: " + name));
-    }
-
     @Transactional
     public void cancelTraining(CancelTrainingRequest request) {
         String txnId = UUID.randomUUID().toString();

@@ -31,18 +31,18 @@ public class TraineeService {
     private final TraineeDao traineeDao;
     private final TrainerDao trainerDao;
     private final TrainingDao trainingDao;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
     Random random;
     String transactionId = UUID.randomUUID().toString();
     private final Counter createdTraineesCounter;
 
     @Autowired
-    public TraineeService(TraineeDao traineeDao, TrainerDao trainerDao, TrainingDao trainingDao, MeterRegistry meterRegistry) {
+    public TraineeService(TraineeDao traineeDao, TrainerDao trainerDao, TrainingDao trainingDao, MeterRegistry meterRegistry, PasswordEncoder passwordEncoder) {
         this.traineeDao = traineeDao;
         this.trainerDao = trainerDao;
         this.trainingDao = trainingDao;
         this.createdTraineesCounter = meterRegistry.counter("trainee.created.count");
+        this.passwordEncoder = passwordEncoder;
     }
 
     public void createTrainee(Trainee trainee) {
