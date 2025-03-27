@@ -15,7 +15,9 @@ The application is split into several microservices to improve scalability and m
 - **Eureka Server** – Runs on port `8761` and registers all microservices.
 - **Main Microservice** – Runs on port `8081`. It handles the core functionalities of the training application, including trainer and trainee management, training scheduling, and more.
 - **Trainer Workload Microservice** – Runs on port `8082` and manages workload updates for trainers. It provides endpoints to update, retrieve monthly summaries, and get aggregate workload data.
-- **Communication:** The microservices communicate with one another using REST endpoints. Eureka acts as the service registry to allow dynamic discovery of available services.
+- **Communication:** The microservices communicate with one another using Kafka + rest endpoints. Eureka acts as the service registry to allow dynamic discovery of available services.Kafka running port is assigned to 9092 you can run it using docker or install it locally
+
+also it has kafka as communca
 
 ## Modules and Responsibilities
 
