@@ -34,7 +34,7 @@ public class TrainingController {
 
     @ApiOperation(value = "Get active trainers not assigned to a specific trainee", response = TrainerTraineeResponse.class, responseContainer = "List")
     @GetMapping("/{username}/unassigned-trainers")
-    public ResponseEntity<List<TrainerDetails>> getUnassignedActiveTrainers(@PathVariable String username) {
+    public ResponseEntity<List<TrainerDetails>> getUnassignedActiveTrainers(@PathVariable("username") String username) {
         // Use the TrainingService method
         List<Trainer> unassignedTrainers = trainingService.getUnassignedTrainersForTrainee(username);
 
@@ -48,7 +48,7 @@ public class TrainingController {
     @ApiOperation(value = "Update a trainee's trainer list")
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Trainer list updated successfully"), @ApiResponse(code = 404, message = "Trainee not found"), @ApiResponse(code = 400, message = "Invalid input")})
     @PutMapping("/{username}/trainers")
-    public ResponseEntity<List<TrainerDetails>> updateTraineeTrainers(@PathVariable String username, @RequestBody UpdateTraineeTrainersRequest request) {
+    public ResponseEntity<List<TrainerDetails>> updateTraineeTrainers(@PathVariable("username") String username, @RequestBody UpdateTraineeTrainersRequest request) {
         List<TrainerDetails> updatedTrainers = trainingService.updateTraineeTrainers(username, request.getTrainerUsernames());
         return ResponseEntity.ok(updatedTrainers);
     }

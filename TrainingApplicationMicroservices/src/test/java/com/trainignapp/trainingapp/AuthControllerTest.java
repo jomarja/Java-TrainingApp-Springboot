@@ -44,19 +44,29 @@ class AuthControllerTest {
         String username = "john.doe";
         String password = "password123";
 
-        // Prepare a JSON body for the login request.
-        String jsonRequest = "{\"username\": \"" + username + "\", \"password\": \"" + password + "\"}";
+        String jsonRequest = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
 
-        // Stub the authentication method as needed.
-        Mockito.when(trainerService.authenticateTrainer(username, password)).thenReturn(true);
-
-        // If needed, also stub brute force protection behavior.
+        // 1) allow login
         Mockito.when(bruteForceService.isBlocked(username)).thenReturn(false);
+        // 2) authenticate as trainer
+        Mockito.when(trainerService.authenticateTrainer(username, password)).thenReturn(true);
+        // 3) no trainee authentication
+        Mockito.when(traineeService.authenticateTrainee(username, password)).thenReturn(false);
 
-        // Stub jwtUtil to generate a token (or you can simply stub it to return a dummy token)
-        Mockito.when(jwtUtil.generateToken(Mockito.any(UserDetails.class))).thenReturn("dummy-token");
+        // 4) stub UserDetails lookup
+        UserDetails dummyPrincipal = Mockito.mock(UserDetails.class);
+        Mockito.when(customUserDetailsService.loadUserByUsername(username))
+                .thenReturn(dummyPrincipal);
 
-        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(jsonRequest)).andExpect(status().isOk()).andExpect(content().json("{\"token\":\"dummy-token\"}"));
+        // 5) stub token generation
+        Mockito.when(jwtUtil.generateToken(dummyPrincipal))
+                .thenReturn("dummy-token");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"token\":\"dummy-token\"}"));
     }
 
 

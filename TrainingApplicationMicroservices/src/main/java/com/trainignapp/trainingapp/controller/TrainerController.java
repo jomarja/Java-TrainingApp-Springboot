@@ -52,21 +52,21 @@ public class TrainerController {
 
     @ApiOperation(value = "Get Trainer Profile", response = TrainerProfileResponse.class)
     @GetMapping("/{username}/profile")
-    public ResponseEntity<TrainerProfileResponse> getTrainerProfile(@PathVariable String username) {
+    public ResponseEntity<TrainerProfileResponse> getTrainerProfile(@PathVariable("username")  String username) {
         TrainerProfileResponse profileResponse = trainerService.getTrainerProfile(username);
         return ResponseEntity.ok(profileResponse);
     }
 
     @ApiOperation(value = "Update trainer profile", response = TrainerProfileResponse.class)
     @PutMapping("/{username}/update")
-    public ResponseEntity<TrainerProfileResponseFull> updateTrainerProfile(@PathVariable String username, @Validated @RequestBody UpdateTrainerProfileRequest request) {
+    public ResponseEntity<TrainerProfileResponseFull> updateTrainerProfile(@PathVariable("username")  String username, @Validated @RequestBody UpdateTrainerProfileRequest request) {
         TrainerProfileResponseFull response = trainerService.updateProfile(username, request);
         return ResponseEntity.ok(response);
     }
 
     @ApiOperation(value = "Get Trainer's Trainings List", response = List.class)
     @GetMapping("/{username}/trainings")
-    public ResponseEntity<List<TrainerTrainingResponse>> getTrainerTrainings(@PathVariable String username, @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date from, @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date to, @RequestParam(required = false) String traineeName) {
+    public ResponseEntity<List<TrainerTrainingResponse>> getTrainerTrainings(@PathVariable("username")  String username, @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date from, @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date to, @RequestParam(required = false) String traineeName) {
 
         List<TrainerTrainingResponse> trainings = trainingService.getTrainerTrainingsByCriteria(username, from, to, traineeName);
 
@@ -75,7 +75,7 @@ public class TrainerController {
 
     @ApiOperation(value = "Activate/De-Activate a trainer", response = ResponseEntity.class)
     @PatchMapping("/{username}/activate")
-    public ResponseEntity<Void> toggleTrainerActivation(@PathVariable String username, @RequestParam boolean isActive) {
+    public ResponseEntity<Void> toggleTrainerActivation(@PathVariable("username")  String username, @RequestParam("isActive")  boolean isActive) {
         trainerService.deactivateTrainer(username, isActive);
         return ResponseEntity.status(HttpStatus.OK).build();
     }

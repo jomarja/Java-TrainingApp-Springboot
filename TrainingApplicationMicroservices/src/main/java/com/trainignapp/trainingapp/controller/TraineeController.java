@@ -48,14 +48,14 @@ public class TraineeController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successfully retrieved trainee profile"), @ApiResponse(code = 404, message = "Trainee not found")})
 
     @GetMapping("/{username}/profile")
-    public ResponseEntity<TraineeProfileResponse> getTraineeProfile(@ApiParam(value = "Username of the trainee to fetch", required = true) @PathVariable String username) {
+    public ResponseEntity<TraineeProfileResponse> getTraineeProfile(@ApiParam(value = "Username of the trainee to fetch", required = true) @PathVariable("username")  String username) {
         TraineeProfileResponse profileResponse = traineeService.getTraineeProfile(username);
         return ResponseEntity.ok(profileResponse);
     }
 
     @ApiOperation(value = "Update Trainee Profile", response = TraineeProfileResponse.class)
     @PutMapping("/{username}/update")
-    public ResponseEntity<TraineeUpdatedProfileResponse> updateTraineeProfile(@ApiParam(value = "Username of the trainee to update", required = true) @PathVariable String username, @Validated @RequestBody UpdateTraineeProfileRequest request) {
+    public ResponseEntity<TraineeUpdatedProfileResponse> updateTraineeProfile(@ApiParam(value = "Username of the trainee to update", required = true) @PathVariable("username")  String username, @Validated @RequestBody UpdateTraineeProfileRequest request) {
 
         TraineeUpdatedProfileResponse response = traineeService.updateProfile(username, request);
 
@@ -64,14 +64,14 @@ public class TraineeController {
 
     @ApiOperation(value = "Delete a trainee profile", response = String.class)
     @DeleteMapping("/{username}/delete")
-    public ResponseEntity<String> deleteTraineeProfile(@PathVariable String username) {
+    public ResponseEntity<String> deleteTraineeProfile(@PathVariable("username")  String username) {
         traineeService.deleteTrainee(username);
         return ResponseEntity.ok("Trainee profile deleted successfully");
     }
 
     @GetMapping("/{username}/trainings")
     @ApiOperation(value = "Get Trainee's Trainings List", response = List.class)
-    public ResponseEntity<List<TraineeTrainingResponse>> getTraineeTrainings(@PathVariable String username, @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date from, @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date to, @RequestParam(required = false) String trainerName, @RequestParam(required = false) String trainingType) {
+    public ResponseEntity<List<TraineeTrainingResponse>> getTraineeTrainings(@PathVariable("username")  String username, @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date from, @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date to, @RequestParam(required = false) String trainerName, @RequestParam(required = false) String trainingType) {
 
         List<TraineeTrainingResponse> trainings = trainingService.getTraineeTrainingsByCriteria(username, from, to, trainerName, trainingType);
         return ResponseEntity.ok(trainings);
@@ -79,7 +79,7 @@ public class TraineeController {
 
     @ApiOperation(value = "Activate/De-Activate a trainee", response = ResponseEntity.class)
     @PatchMapping("/{username}/activate")
-    public ResponseEntity<Void> toggleTraineeActivation(@PathVariable String username, @RequestParam boolean isActive) {
+    public ResponseEntity<Void> toggleTraineeActivation(@PathVariable("username")  String username, @RequestParam("isActive")  boolean isActive) {
         traineeService.deactivateTrainee(username, isActive);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
